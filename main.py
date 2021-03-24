@@ -99,6 +99,8 @@ if __name__ == '__main__':
             color = reset if value == defaults[argument] else colorama.Fore.MAGENTA
             block.log('{}{}: {}{}'.format(color, argument, value, reset))
 
+        # args.model = FlowNet2
+        # args.model_class = class definition (in this case FlowNet2)
         args.model_class = tools.module_to_dict(models)[args.model]
         args.optimizer_class = tools.module_to_dict(torch.optim)[args.optimizer]
         args.loss_class = tools.module_to_dict(losses)[args.loss]
@@ -178,6 +180,7 @@ if __name__ == '__main__':
                 else :
                     return loss_values, output
 
+        # selected model instance
         model_and_loss = ModelAndLoss(args)
 
         block.log('Effective Batch Size: {}'.format(args.effective_batch_size))
@@ -455,3 +458,6 @@ if __name__ == '__main__':
         train_logger.add_scalar('seconds per epoch', progress._time() - last_epoch_time, epoch)
         last_epoch_time = progress._time()
     print("\n")
+
+
+

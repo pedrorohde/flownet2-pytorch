@@ -504,3 +504,34 @@ class FlowNet2CSS(nn.Module):
 
         return flownets2_flow
 
+
+# class InterpolNet(nn.Module):
+
+#     def __init__(self, *args, **kwargs):
+#         self.flownet = FlowNet2(*args, **kwargs)
+    
+#     def fowrward(self, x):
+#         return self.flownet(x)
+
+
+# class InterpolNet(nn.Module):
+
+#     def __init__(self, flownet, weights_path, *args, **kwargs):
+#         self.flownet = flownet(*args, **kwargs)
+#         self.checkpoint_path = torch.load(weights_path)
+#         self.flownet.module.model.load_state_dict(self.checkpoint_path['state_dict'])
+    
+#     def fowrward(self, x):
+#         return self.flownet(x)
+
+class InterpolNet(nn.Module):
+    def __init__(self, args):
+        super(InterpolNet,self).__init__()
+        self.args = args
+        # flownet predictor
+        self.flownet = FlowNet2(args)
+        checkpoint = torch.load("./checkpoints/FlowNet2_checkpoint.pth.tar")
+        self.flownet.load_state_dict(checkpoint['state_dict'])
+    def forward(self, inputs):
+        flow = self.flownet(inputs)
+        return flow
