@@ -532,6 +532,7 @@ class InterpolNet(nn.Module):
         self.flownet = FlowNet2(args)
         checkpoint = torch.load("./checkpoints/FlowNet2_checkpoint.pth.tar")
         self.flownet.load_state_dict(checkpoint['state_dict'])
+        
     def forward(self, inputs):
         flow = self.flownet(inputs)
         return flow
