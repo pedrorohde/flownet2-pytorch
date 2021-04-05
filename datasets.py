@@ -471,7 +471,6 @@ class ImagesFromFolderInterpol(data.Dataset):
     ref_img = cropper(ref_img)
     ref_img = np.array(ref_img).transpose(2,0,1)
     ref_img = torch.from_numpy(ref_img.astype(np.float32))
-    print(f"DATALOADER SHAPE: {ref_img.shape}")
     return [in_images], [ref_img]
 
   def __len__(self):

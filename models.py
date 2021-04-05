@@ -559,5 +559,4 @@ class InterpolNet(nn.Module):
         flow = self.flownet(inputs)
          # warp img1 to img0; magnitude of diff between img0 and and warped_img1, 
         resampled_img1 = self.resample1(x[:,3:,:,:], flow)
-        print(f"SHAPE:::{resampled_img1.shape}")
         return resampled_img1
