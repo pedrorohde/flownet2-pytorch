@@ -542,6 +542,11 @@ class InterpolNet(nn.Module):
                             tofp16()) 
         else:
             self.resample1 = Resample2d()
+        
+        self.conv1 = nn.Conv2d(9, 3, kernel_size=5, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=1)
+        self.relu = nn.ReLU()
 
         self.rgb_max = 255
     def forward(self, inputs):
@@ -559,4 +564,10 @@ class InterpolNet(nn.Module):
         flow = self.flownet(inputs)
          # warp img1 to img0; magnitude of diff between img0 and and warped_img1, 
         resampled_img1 = self.resample1(x[:,3:,:,:], flow)
-        return resampled_img1
+        
+        interpol_input = torch.cat((x1,x2, resampled_img1), dim = 1)
+        prediction = self.conv1(interpol_input)
+        prediction = self.conv2(prediction)
+        prediction = self.conv3(prediction)
+        prediction = self.relu(prediction)
+        return prediction

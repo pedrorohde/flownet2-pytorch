@@ -419,6 +419,7 @@ class ImagesFromFolderInterpol(data.Dataset):
     self.is_cropped = is_cropped
     self.crop_size = args.crop_size
     self.replicates = replicates
+    self.rgb_max = 255
     
     self.in_imgs = []
     self.ref_imgs = []
@@ -469,7 +470,7 @@ class ImagesFromFolderInterpol(data.Dataset):
     in_images = np.array(in_images).transpose(3,0,1,2)
     in_images = torch.from_numpy(in_images.astype(np.float32))
     ref_img = cropper(ref_img)
-    ref_img = np.array(ref_img).transpose(2,0,1)
+    ref_img = (np.array(ref_img).transpose(2,0,1))/self.rgb_max
     ref_img = torch.from_numpy(ref_img.astype(np.float32))
     return [in_images], [ref_img]
 
