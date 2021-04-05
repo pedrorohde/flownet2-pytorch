@@ -172,7 +172,8 @@ if __name__ == '__main__':
                 
             def forward(self, data, target, inference=False ):
                 output = self.model(data)
-
+                import pdb
+                pdb.set_trace()
                 loss_values = self.loss(output, target)
 
                 if not inference :

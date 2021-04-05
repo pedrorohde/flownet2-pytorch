@@ -528,11 +528,36 @@ class InterpolNet(nn.Module):
     def __init__(self, args):
         super(InterpolNet,self).__init__()
         self.args = args
+        
         # flownet predictor
         self.flownet = FlowNet2(args)
         checkpoint = torch.load("./checkpoints/FlowNet2_checkpoint.pth.tar")
         self.flownet.load_state_dict(checkpoint['state_dict'])
-        
+        self.flownet.training = False
+
+        if args.fp16:
+            self.resample1 = nn.Sequential(
+                            tofp32(), 
+                            Resample2d(),
+                            tofp16()) 
+        else:
+            self.resample1 = Resample2d()
+
+        self.rgb_max = 255
     def forward(self, inputs):
+        # Same as fnet2 input
+        rgb_mean = inputs.contiguous().view(inputs.size()[:2]+(-1,)).mean(dim=-1).view(inputs.size()[:2] + (1,1,1,))
+        
+        x = (inputs - rgb_mean) / self.rgb_max
+        x1 = x[:,:,0,:,:]
+        x2 = x[:,:,1,:,:]
+        x = torch.cat((x1,x2), dim = 1)
+
+       
+        # diff_img0 = x[:,:3,:,:] - resampled_img1 
+
         flow = self.flownet(inputs)
-        return flow
+         # warp img1 to img0; magnitude of diff between img0 and and warped_img1, 
+        resampled_img1 = self.resample1(x[:,3:,:,:], flow)
+        print(f"SHAPE:::{resampled_img1.shape}")
+        return resampled_img1

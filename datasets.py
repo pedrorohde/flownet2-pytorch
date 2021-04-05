@@ -411,6 +411,76 @@ class ImagesFromFolderReverse(data.Dataset):
 
   def __len__(self):
     return self.size * self.replicates
+
+class ImagesFromFolderInterpol(data.Dataset):
+  def __init__(self, args, is_cropped=False, scanSubdir=False, root = '/path/to/frames/only/folder', iext = 'png', replicates = 1):
+    self.args = args
+    self.render_size = [-1,-1]
+    self.is_cropped = is_cropped
+    self.crop_size = args.crop_size
+    self.replicates = replicates
+    
+    self.in_imgs = []
+    self.ref_imgs = []
+    def parseTrainData(path):
+        images = sorted( glob( join(path, '*.' + iext) ) )
+        for i in range(0,len(images)-2, 2):
+            im1 = images[i]
+            ref = images[i+1]
+            im2 = images[i+2]
+            self.in_imgs += [ [ im1, im2 ] ]
+            self.ref_imgs += [ [ ref ] ]
+
+    if scanSubdir:
+        print("WARNING: assuming that all samples have the same resolution")
+        subdir_paths = [f.path for f in os.scandir(root) if f.is_dir()]
+        for subdir in subdir_paths:
+            parseTrainData(subdir)
+    else:
+        parseTrainData(root)
+
+    self.size = len(self.in_imgs)
+    print(f"Total samples: {self.size}")
+
+    self.frame_size = frame_utils.read_gen(self.in_imgs[0][0]).shape
+    if (self.render_size[0] < 0) or (self.render_size[1] < 0) or (self.frame_size[0]%64) or (self.frame_size[1]%64):
+        self.render_size[0] = ( (self.frame_size[0])//64 ) * 64
+        self.render_size[1] = ( (self.frame_size[1])//64 ) * 64
+
+    args.inference_size = self.render_size
+
+    assert (len(self.in_imgs) == len(self.ref_imgs))
+
+  def __getitem__(self, index):
+    index = index % self.size
+
+    in_img1 = frame_utils.read_gen(self.in_imgs[index][0])
+    in_img2 = frame_utils.read_gen(self.in_imgs[index][1])
+    ref_img = frame_utils.read_gen(self.ref_imgs[index][0])
+
+    in_images = [in_img1, in_img2]
+    ref_images = [ref_img]
+    image_size = in_img1.shape[:2]
+    if self.is_cropped:
+        cropper = StaticRandomCrop(image_size, self.crop_size)
+    else:
+        cropper = StaticCenterCrop(image_size, self.render_size)
+
+    in_images = list(map(cropper, in_images))
+    in_images = np.array(in_images).transpose(3,0,1,2)
+    in_images = torch.from_numpy(in_images.astype(np.float32))
+    ref_images = list(map(cropper, ref_images))
+    # import pdb
+    # pdb.set_trace()
+    ref_images = np.array(ref_images).transpose(0,3,1,2)
+    ref_images = torch.from_numpy(ref_images.astype(np.float32))
+
+    return [in_images], ref_images
+
+  def __len__(self):
+    return self.size * self.replicates
+
+
 '''
 import argparse
 import sys, os
