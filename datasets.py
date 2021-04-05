@@ -432,7 +432,7 @@ class ImagesFromFolderInterpol(data.Dataset):
             self.ref_imgs += [ [ ref ] ]
 
     if scanSubdir:
-        print("WARNING: assuming that all samples have the same resolution")
+        print(f"WARNING: assuming that all samples have the same or higher resolution than {self.crop_size}")
         subdir_paths = [f.path for f in os.scandir(root) if f.is_dir()]
         for subdir in subdir_paths:
             parseTrainData(subdir)
@@ -459,7 +459,6 @@ class ImagesFromFolderInterpol(data.Dataset):
     ref_img = frame_utils.read_gen(self.ref_imgs[index][0])
 
     in_images = [in_img1, in_img2]
-    ref_images = [ref_img]
     image_size = in_img1.shape[:2]
     if self.is_cropped:
         cropper = StaticRandomCrop(image_size, self.crop_size)
@@ -469,13 +468,11 @@ class ImagesFromFolderInterpol(data.Dataset):
     in_images = list(map(cropper, in_images))
     in_images = np.array(in_images).transpose(3,0,1,2)
     in_images = torch.from_numpy(in_images.astype(np.float32))
-    ref_images = list(map(cropper, ref_images))
-    # import pdb
-    # pdb.set_trace()
-    ref_images = np.array(ref_images).transpose(0,3,1,2)
-    ref_images = torch.from_numpy(ref_images.astype(np.float32))
-
-    return [in_images], ref_images
+    ref_img = cropper(ref_img)
+    ref_img = np.array(ref_img).transpose(2,0,1)
+    ref_img = torch.from_numpy(ref_img.astype(np.float32))
+    print(f"DATALOADER SHAPE: {ref_img.shape}")
+    return [in_images], [ref_img]
 
   def __len__(self):
     return self.size * self.replicates
