@@ -534,6 +534,8 @@ class InterpolNet(nn.Module):
         checkpoint = torch.load("./checkpoints/FlowNet2_checkpoint.pth.tar")
         self.flownet.load_state_dict(checkpoint['state_dict'])
         self.flownet.training = False
+        for param in self.flownet.parameters():
+            param.requires_grad = False
 
         if args.fp16:
             self.resample1 = nn.Sequential(
