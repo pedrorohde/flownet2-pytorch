@@ -85,3 +85,14 @@ class MultiScale(nn.Module):
             lossvalue += self.loss(output, target)
             return  [lossvalue, epevalue]
 
+from pytorch_msssim import ms_ssim
+class MSSSIMLoss(nn.Module):
+    def __init__(self, args):
+        super(MSSSIMLoss, self).__init__()
+        self.args = args
+        self.loss_labels = ['MS-SSIM']
+
+    def forward(self, output, target):
+        lossvalue = 100*(1 - ms_ssim(output, target, data_range=1.0, size_average=True))
+        
+        return [ lossvalue ]

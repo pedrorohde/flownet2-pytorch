@@ -413,7 +413,7 @@ class ImagesFromFolderReverse(data.Dataset):
     return self.size * self.replicates
 
 class ImagesFromFolderInterpol(data.Dataset):
-  def __init__(self, args, is_cropped=False, scanSubdir=False, root = '/path/to/frames/only/folder', iext = 'png', replicates = 1):
+  def __init__(self, args, is_cropped=False, scanSubdir=True, root = '/path/to/frames/only/folder', iext = 'png', replicates = 1):
     self.args = args
     self.render_size = [-1,-1]
     self.is_cropped = is_cropped
@@ -472,6 +472,7 @@ class ImagesFromFolderInterpol(data.Dataset):
     ref_img = cropper(ref_img)
     ref_img = (np.array(ref_img).transpose(2,0,1))/self.rgb_max
     ref_img = torch.from_numpy(ref_img.astype(np.float32))
+
     return [in_images], [ref_img]
 
   def __len__(self):
