@@ -51,6 +51,7 @@ if __name__ == '__main__':
     parser.add_argument('--inference_batch_size', type=int, default=1)
     parser.add_argument('--inference_n_batches', type=int, default=-1)
     parser.add_argument('--save_flow', action='store_true', help='save predicted flows to file')
+    parser.add_argument('--save_frames', action='store_true', help='save predicted frames to file')
 
     parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--log_frequency', '--summ_iter', type=int, default=1, help="Log every n batches")
@@ -248,13 +249,13 @@ if __name__ == '__main__':
     def train(args, epoch, start_iteration, data_loader, model, optimizer, logger, is_validate=False, offset=0):
         statistics = []
         total_loss = 0
-
         if is_validate:
             model.eval()
             title = 'Validating Epoch {}'.format(epoch)
             args.validation_n_batches = np.inf if args.validation_n_batches < 0 else args.validation_n_batches
             progress = tqdm(tools.IteratorTimer(data_loader), ncols=100, total=np.minimum(len(data_loader), args.validation_n_batches), leave=True, position=offset, desc=title)
         else:
+            # import pdb; pdb.set_trace()
             model.train()
             title = 'Training Epoch {}'.format(epoch)
             args.train_n_batches = np.inf if args.train_n_batches < 0 else args.train_n_batches
@@ -314,8 +315,10 @@ if __name__ == '__main__':
 
             progress.set_description(title + ' ' + tools.format_dictionary_of_losses(loss_labels, statistics[-1]))
 
-            if ((((global_iteration + 1) % args.log_frequency) == 0 and not is_validate) or
-                (is_validate and batch_idx == args.validation_n_batches - 1)):
+            if ((((global_iteration + 1) % args.log_frequency) == 0)):
+            
+            # if ((((global_iteration + 1) % args.log_frequency) == 0 and not is_validate) or
+            #     (is_validate and batch_idx == args.validation_n_batches - 1)):
 
                 global_iteration = global_iteration if not is_validate else start_iteration
 
@@ -350,7 +353,10 @@ if __name__ == '__main__':
             flow_folder = "{}/inference/{}.epoch-{}-flow-field".format(args.save,args.name.replace('/', '.'),epoch)
             if not os.path.exists(flow_folder):
                 os.makedirs(flow_folder)
-        
+        if args.save_frames:
+            frame_folder = "{}/inference/{}.epoch-{}-interpol-frames".format(args.save,args.name.replace('/', '.'),epoch)
+            if not os.path.exists(frame_folder):
+                os.makedirs(frame_folder)
         # visualization folder
         if args.inference_visualize:
             flow_vis_folder = "{}/inference/{}.epoch-{}-flow-vis".format(args.save, args.name.replace('/', '.'), epoch)
@@ -395,7 +401,15 @@ if __name__ == '__main__':
                         flow_utils.visulize_flow_file(
                             join(flow_folder, '%06d.flo' % (batch_idx * args.inference_batch_size + i)),flow_vis_folder)
                    
-                            
+            if args.save_frames:
+                # import pdb; pdb.set_trace()
+                for i in range(args.inference_batch_size):
+                    _pframe = output[i].data.cpu().numpy().transpose(1, 2, 0)
+                    # _pframe = (_pframe*255).astype(int).clip(min=0,max=255)
+                    _pframe = (_pframe).astype(int).clip(min=0,max=255)
+                    import scipy.misc
+                    f_idx = (batch_idx * args.inference_batch_size + i)
+                    scipy.misc.toimage(_pframe, cmin=0, cmax=255).save(f'{frame_folder}/{f_idx:06d}.png')
             progress.set_description('Inference Averages for Epoch {}: '.format(epoch) + tools.format_dictionary_of_losses(loss_labels, np.array(statistics).mean(axis=0)))
             progress.update(1)
 

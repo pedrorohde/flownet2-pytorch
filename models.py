@@ -524,6 +524,73 @@ class FlowNet2CSS(nn.Module):
 #     def fowrward(self, x):
 #         return self.flownet(x)
 
+class BasicResBlock(nn.Module):
+    def __init__(self, in_featuremaps, k_number=128, k_size=3):
+        super(BasicResBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_featuremaps, k_number, kernel_size=k_size, stride=1,padding=1)
+        self.bn1 = nn.BatchNorm2d(k_number)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(k_number, k_number, kernel_size=k_size, stride=1,padding=1)
+        self.bn2 = nn.BatchNorm2d(k_number)
+        self.stride = 1
+
+    def forward(self, x):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        out += identity
+
+        return out
+
+
+class DummyModel(nn.Module):
+    def __init__(self, args):
+        super(DummyModel,self).__init__()
+        self.args = args
+        
+        res_kernel_number = 8
+        self.convResIn_img1 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_img1 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        self.convResOut_img1 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        
+        self.convResIn_img2 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_img2 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        self.convResOut_img2 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        
+        self.convResIn_final = nn.Conv2d(6, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_final = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        self.convResOut_final = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+
+        self.rgb_max = 255
+    def forward(self, inputs):
+        # Same as fnet2 input
+        rgb_mean = inputs.contiguous().view(inputs.size()[:2]+(-1,)).mean(dim=-1).view(inputs.size()[:2] + (1,1,1,))
+        
+        x = (inputs - rgb_mean) / self.rgb_max
+        x1 = x[:,:,0,:,:]
+        x1 = self.convResIn_img1(x1)
+        x1 = self.resBlock_img1(x1)
+        x1 = self.convResOut_img1(x1)
+        
+        x2 = x[:,:,1,:,:]
+        x2 = self.convResIn_img2(x2)
+        x2 = self.resBlock_img2(x2)
+        x2 = self.convResOut_img2(x2)
+
+        
+        x = torch.cat((x1,x2), dim = 1)
+
+        prediction = self.convResIn_final(x)
+        prediction = self.resBlock_final(prediction)
+        prediction = self.convResOut_final(prediction)
+        return prediction
+
 class InterpolNet(nn.Module):
     def __init__(self, args):
         super(InterpolNet,self).__init__()
@@ -545,10 +612,26 @@ class InterpolNet(nn.Module):
         else:
             self.resample1 = Resample2d()
         
-        self.conv1 = nn.Conv2d(9, 3, kernel_size=5, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
-        self.conv3 = nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=1)
-        self.relu = nn.ReLU()
+        res_kernel_number = 128
+        self.convResIn_img1 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_img1 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        self.convResOut_img1 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        
+        self.convResIn_img2 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_img2 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        self.convResOut_img2 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        
+        self.convResIn_mid = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_mid = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        self.convResOut_mid = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+
+        self.convResIn_final = nn.Conv2d(9, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_final = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        self.convResOut_final = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        # self.conv1 = nn.Conv2d(9, 3, kernel_size=5, stride=1, padding=1)
+        # self.conv2 = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
+        # self.conv3 = nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=1)
+        # self.relu = nn.ReLU()
 
         self.rgb_max = 255
     def forward(self, inputs):
@@ -557,19 +640,30 @@ class InterpolNet(nn.Module):
         
         x = (inputs - rgb_mean) / self.rgb_max
         x1 = x[:,:,0,:,:]
+        x1 = self.convResIn_img1(x1)
+        x1 = self.resBlock_img1(x1)
+        x1 = self.convResOut_img1(x1)
+        
         x2 = x[:,:,1,:,:]
+        x2 = self.convResIn_img2(x2)
+        x2 = self.resBlock_img2(x2)
+        x2 = self.convResOut_img2(x2)
+
+        
         x = torch.cat((x1,x2), dim = 1)
 
-       
-        # diff_img0 = x[:,:3,:,:] - resampled_img1 
-
         flow = self.flownet(inputs)
-         # warp img1 to img0; magnitude of diff between img0 and and warped_img1, 
-        resampled_img1 = self.resample1(x[:,3:,:,:], flow)
+        warped_mid = self.resample1(x[:,3:,:,:], flow)
+
+        warped_mid = self.convResIn_mid(warped_mid)
+        warped_mid = self.resBlock_mid(warped_mid)
+        warped_mid = self.convResOut_mid(warped_mid)
         
-        interpol_input = torch.cat((x1,x2, resampled_img1), dim = 1)
-        prediction = self.conv1(interpol_input)
-        prediction = self.conv2(prediction)
-        prediction = self.conv3(prediction)
-        prediction = self.relu(prediction)
+        interpol_input = torch.cat((x1,x2, warped_mid), dim = 1)
+
+
+        prediction = self.convResIn_final(interpol_input)
+        prediction = self.resBlock_final(prediction)
+        prediction = self.convResOut_final(prediction)
+        # prediction = self.relu(prediction)
         return prediction

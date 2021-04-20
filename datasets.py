@@ -424,7 +424,6 @@ class ImagesFromFolderInterpol(data.Dataset):
     self.in_imgs = []
     self.ref_imgs = []
     def parseTrainData(path):
-        path = path
         images = sorted( glob( join(path, '*.' + iext) ) )
         for i in range(0,len(images)-2, 2):
             im1 = images[i]
@@ -432,15 +431,18 @@ class ImagesFromFolderInterpol(data.Dataset):
             im2 = images[i+2]
             self.in_imgs += [ [ im1, im2 ] ]
             self.ref_imgs += [ [ ref ] ]
-    # import pdb; pdb.set_trace()
     if scanSubdir:
         print(f"[WARNING]: assuming that all samples have the same or higher resolution than {self.crop_size}")
         subdir_paths = [f.path for f in os.scandir(root) if f.is_dir()]
         for subdir in subdir_paths:
             parseTrainData(subdir)
     elif annotation_file != '': #Vimeo90k
-        print(f"[WARNING] Loading Vimeo90k from .txt description")
+        print(f"[LOG] Loading Vimeo90k from .txt description")
         subdir_paths = [f"{root}/{x.strip()}/" for x in open(annotation_file)]
+        # if "val" in annotation_file:   
+        #     subdir_paths = subdir_paths[:100]
+        # else:
+        #     subdir_paths = subdir_paths[:500]
         for subdir in subdir_paths:
             parseTrainData(subdir)
     else:
@@ -476,7 +478,7 @@ class ImagesFromFolderInterpol(data.Dataset):
     in_images = np.array(in_images).transpose(3,0,1,2)
     in_images = torch.from_numpy(in_images.astype(np.float32))
     ref_img = cropper(ref_img)
-    ref_img = (np.array(ref_img).transpose(2,0,1)) #/self.rgb_max
+    ref_img = (np.array(ref_img).transpose(2,0,1))#/self.rgb_max
     ref_img = torch.from_numpy(ref_img.astype(np.float32))
 
     return [in_images], [ref_img]

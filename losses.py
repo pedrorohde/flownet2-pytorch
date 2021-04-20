@@ -93,6 +93,6 @@ class MSSSIMLoss(nn.Module):
         self.loss_labels = ['MS-SSIM']
 
     def forward(self, output, target):
-        lossvalue = 100*(1 - ms_ssim(output, target, data_range=1.0, size_average=True))
+        lossvalue = 100*(1 - ms_ssim(output, target, data_range=255.0, size_average=True))
         
         return [ lossvalue ]
