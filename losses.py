@@ -85,6 +85,26 @@ class MultiScale(nn.Module):
             lossvalue += self.loss(output, target)
             return  [lossvalue, epevalue]
 
+class L2InterpolLoss(nn.Module):
+    def __init__(self, args):
+        super(L2, self).__init__()
+        self.args = args
+        self.loss_labels = ['L2']
+
+    def forward(self, output, target):
+        lossvalue = torch.norm(output-target,p=2,dim=1).mean()
+        return [ lossvalue ]
+
+class L2InterpolLoss(nn.Module):
+    def __init__(self, args):
+        super(L2InterpolLoss, self).__init__()
+        self.args = args
+        self.loss_labels = ['L2']
+
+    def forward(self, output, target):
+        lossvalue = torch.norm(output-target,p=2,dim=1).mean()
+        return [lossvalue]
+
 from pytorch_msssim import ms_ssim
 class MSSSIMLoss(nn.Module):
     def __init__(self, args):

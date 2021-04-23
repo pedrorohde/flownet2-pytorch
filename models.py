@@ -631,7 +631,7 @@ class InterpolNet(nn.Module):
         # self.conv1 = nn.Conv2d(9, 3, kernel_size=5, stride=1, padding=1)
         # self.conv2 = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
         # self.conv3 = nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=1)
-        # self.relu = nn.ReLU()
+        self.relu = nn.ReLU()
 
         self.rgb_max = 255
     def forward(self, inputs):
@@ -665,5 +665,5 @@ class InterpolNet(nn.Module):
         prediction = self.convResIn_final(interpol_input)
         prediction = self.resBlock_final(prediction)
         prediction = self.convResOut_final(prediction)
-        # prediction = self.relu(prediction)
+        prediction = self.relu(prediction)
         return prediction
