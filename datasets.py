@@ -439,10 +439,10 @@ class ImagesFromFolderInterpol(data.Dataset):
     elif annotation_file != '': #Vimeo90k
         print(f"[LOG] Loading Vimeo90k from .txt description")
         subdir_paths = [f"{root}/{x.strip()}/" for x in open(annotation_file)]
-        if "test" in annotation_file:   
-            subdir_paths = subdir_paths[:50]
-        else:
-            subdir_paths = subdir_paths[:1000]
+        # if "test" in annotation_file:   
+        #     subdir_paths = subdir_paths[:50]
+        # else:
+        #     subdir_paths = subdir_paths[:1000]
         for subdir in subdir_paths:
             parseTrainData(subdir)
     else:
