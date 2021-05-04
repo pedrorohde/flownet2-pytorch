@@ -648,11 +648,8 @@ class InterpolNet(nn.Module):
                             tofp16()) 
         else:
             self.resample1 = Resample2d()
-
-        self.res_block_number = res_block_number
         
         res_kernel_number = 128
-        res_block_number = 5
 
         self.res_stack_img1 = ResidualStack(
             in_channels=3,
