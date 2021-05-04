@@ -550,9 +550,9 @@ class BasicResBlock(nn.Module):
 
 
 class ConcatResBlock(nn.Module):
-    def __init__(self, in_featuremaps, k_number=128, k_size=3, res_block_number=1):
+    def __init__(self, k_number=128, k_size=3, res_block_number=1):
         super(ConcatResBlock, self).__init__()
-        self.res_blocks = [BasicResBlock(in_featuremaps, k_number, k_size) for _ in range(res_block_number)]
+        self.res_blocks = [BasicResBlock(k_number, k_number, k_size) for _ in range(res_block_number)]
         self.res_block_number = res_block_number
         
 
@@ -561,6 +561,27 @@ class ConcatResBlock(nn.Module):
         out = x
         for i in range(self.res_block_number):
             out = self.res_blocks[i](out)
+
+        return out
+
+
+class ResidualStack(nn.Module):
+    def __init__(self, in_channels=3, out_channels=3, res_kernel_number=128, res_block_number=10, k_size=3):
+        super(ResidualStack, self).__init__()
+        self.convResIn = nn.Conv2d(in_channels, res_kernel_number, kernel_size=k_size, stride=1, padding=1)
+        self.resBlocks = ConcatResBlock(
+            k_number=res_kernel_number,
+            k_size=k_size,
+            res_block_number=res_block_number
+        )
+        self.convResOut = nn.Conv2d(res_kernel_number, out_channels, kernel_size=k_size, stride=1, padding=1)
+        
+
+    def forward(self, x):
+        out = x
+        out = self.convResIn(out)
+        out = self.resBlocks(out)
+        out = self.convResOut(out)
 
         return out
 
@@ -631,29 +652,59 @@ class InterpolNet(nn.Module):
         self.res_block_number = res_block_number
         
         res_kernel_number = 128
-        self.convResIn_img1 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        # self.resBlock_img1 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        # self.resBlock_img1 = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
-        self.resBlock_img1 = ConcatResBlock(res_kernel_number, k_number=res_kernel_number, res_block_number=res_block_number)
-        self.convResOut_img1 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        res_block_number = 5
+        # self.convResIn_img1 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        # # self.resBlock_img1 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        # # self.resBlock_img1 = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
+        # self.resBlock_img1 = ConcatResBlock(k_number=res_kernel_number, res_block_number=res_block_number)
+        # self.convResOut_img1 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        self.stack_img1 = ResidualStack(
+            in_channels=3,
+            out_channels=3,
+            res_kernel_number=res_kernel_number,
+            res_block_number=res_block_number,
+            k_size=3
+        )
         
-        self.convResIn_img2 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        # self.resBlock_img2 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        # self.resBlock_img2 = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
-        self.resBlock_img2 = ConcatResBlock(res_kernel_number, k_number=res_kernel_number, res_block_number=res_block_number)
-        self.convResOut_img2 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        # self.convResIn_img2 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        # # self.resBlock_img2 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        # # self.resBlock_img2 = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
+        # self.resBlock_img2 = ConcatResBlock(k_number=res_kernel_number, res_block_number=res_block_number)
+        # self.convResOut_img2 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        self.stack_img2 = ResidualStack(
+            in_channels=3,
+            out_channels=3,
+            res_kernel_number=res_kernel_number,
+            res_block_number=res_block_number,
+            k_size=3
+        )
         
-        self.convResIn_mid = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        # self.resBlock_mid = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        # self.resBlock_mid = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
-        self.resBlock_mid = ConcatResBlock(res_kernel_number, k_number=res_kernel_number, res_block_number=res_block_number)
-        self.convResOut_mid = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        # self.convResIn_mid = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        # # self.resBlock_mid = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        # # self.resBlock_mid = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
+        # self.resBlock_mid = ConcatResBlock(k_number=res_kernel_number, res_block_number=res_block_number)
+        # self.convResOut_mid = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        self.stack_mid = ResidualStack(
+            in_channels=3,
+            out_channels=3,
+            res_kernel_number=res_kernel_number,
+            res_block_number=res_block_number,
+            k_size=3
+        )
 
-        self.convResIn_final = nn.Conv2d(9, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        # self.resBlock_final = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        # self.resBlock_final = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
-        self.resBlock_final = ConcatResBlock(res_kernel_number, k_number=res_kernel_number, res_block_number=res_block_number)
-        self.convResOut_final = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        # self.convResIn_final = nn.Conv2d(9, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        # # self.resBlock_final = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
+        # # self.resBlock_final = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
+        # self.resBlock_final = ConcatResBlock(k_number=res_kernel_number, res_block_number=res_block_number)
+        # self.convResOut_final = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        self.stack_final = ResidualStack(
+            in_channels=9,
+            out_channels=3,
+            res_kernel_number=res_kernel_number,
+            res_block_number=res_block_number,
+            k_size=3
+        )
+
         # self.conv1 = nn.Conv2d(9, 3, kernel_size=5, stride=1, padding=1)
         # self.conv2 = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
         # self.conv3 = nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=1)
@@ -667,15 +718,11 @@ class InterpolNet(nn.Module):
         x = (inputs - rgb_mean) / self.rgb_max
         x1 = x[:,:,0,:,:]
         x1 = self.convResIn_img1(x1)
-        # for i in range(self.res_block_number):
-        #     x1 = self.resBlock_img1[i](x1)
         x1 = self.resBlock_img1(x1)
         x1 = self.convResOut_img1(x1)
         
         x2 = x[:,:,1,:,:]
         x2 = self.convResIn_img2(x2)
-        # for i in range(self.res_block_number):
-        #     x2 = self.resBlock_img2[i](x2)
         x2 = self.resBlock_img2(x2)
         x2 = self.convResOut_img2(x2)
 
@@ -686,8 +733,6 @@ class InterpolNet(nn.Module):
         warped_mid = self.resample1(x[:,3:,:,:], flow)
 
         warped_mid = self.convResIn_mid(warped_mid)
-        # for i in range(self.res_block_number):
-        #     warped_mid = self.resBlock_mid[i](warped_mid)
         warped_mid = self.resBlock_mid(warped_mid)
         warped_mid = self.convResOut_mid(warped_mid)
         
@@ -695,8 +740,6 @@ class InterpolNet(nn.Module):
 
 
         prediction = self.convResIn_final(interpol_input)
-        # for i in range(self.res_block_number):
-        #     prediction = self.resBlock_final[i](prediction)
         prediction = self.resBlock_final(prediction)
         prediction = self.convResOut_final(prediction)
         prediction = self.relu(prediction)
