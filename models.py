@@ -653,11 +653,7 @@ class InterpolNet(nn.Module):
         
         res_kernel_number = 128
         res_block_number = 5
-        # self.convResIn_img1 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        # # self.resBlock_img1 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        # # self.resBlock_img1 = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
-        # self.resBlock_img1 = ConcatResBlock(k_number=res_kernel_number, res_block_number=res_block_number)
-        # self.convResOut_img1 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+
         self.res_stack_img1 = ResidualStack(
             in_channels=3,
             out_channels=3,
@@ -666,11 +662,6 @@ class InterpolNet(nn.Module):
             k_size=3
         )
         
-        # self.convResIn_img2 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        # # self.resBlock_img2 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        # # self.resBlock_img2 = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
-        # self.resBlock_img2 = ConcatResBlock(k_number=res_kernel_number, res_block_number=res_block_number)
-        # self.convResOut_img2 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
         self.res_stack_img2 = ResidualStack(
             in_channels=3,
             out_channels=3,
@@ -679,11 +670,6 @@ class InterpolNet(nn.Module):
             k_size=3
         )
         
-        # self.convResIn_mid = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        # # self.resBlock_mid = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        # # self.resBlock_mid = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
-        # self.resBlock_mid = ConcatResBlock(k_number=res_kernel_number, res_block_number=res_block_number)
-        # self.convResOut_mid = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
         self.res_stack_mid = ResidualStack(
             in_channels=3,
             out_channels=3,
@@ -692,11 +678,6 @@ class InterpolNet(nn.Module):
             k_size=3
         )
 
-        # self.convResIn_final = nn.Conv2d(9, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        # # self.resBlock_final = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        # # self.resBlock_final = [BasicResBlock(res_kernel_number, k_number=res_kernel_number) for _ in range(self.res_block_number)]
-        # self.resBlock_final = ConcatResBlock(k_number=res_kernel_number, res_block_number=res_block_number)
-        # self.convResOut_final = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
         self.res_stack_final = ResidualStack(
             in_channels=9,
             out_channels=3,
@@ -716,35 +697,24 @@ class InterpolNet(nn.Module):
         rgb_mean = inputs.contiguous().view(inputs.size()[:2]+(-1,)).mean(dim=-1).view(inputs.size()[:2] + (1,1,1,))
         
         x = (inputs - rgb_mean) / self.rgb_max
+
         x1 = x[:,:,0,:,:]
-        # x1 = self.convResIn_img1(x1)
-        # x1 = self.resBlock_img1(x1)
-        # x1 = self.convResOut_img1(x1)
         x1 = self.res_stack_img1(x1)
         
         x2 = x[:,:,1,:,:]
-        # x2 = self.convResIn_img2(x2)
-        # x2 = self.resBlock_img2(x2)
-        # x2 = self.convResOut_img2(x2)
         x2 = self.res_stack_img2(x2)
 
         
         x = torch.cat((x1,x2), dim = 1)
 
         flow = self.flownet(inputs)
-        warped_mid = self.resample1(x[:,3:,:,:], flow)
 
-        # warped_mid = self.convResIn_mid(warped_mid)
-        # warped_mid = self.resBlock_mid(warped_mid)
-        # warped_mid = self.convResOut_mid(warped_mid)
+        warped_mid = self.resample1(x[:,3:,:,:], flow)
         warped_mid = self.res_stack_mid(warped_mid)
         
         interpol_input = torch.cat((x1,x2, warped_mid), dim = 1)
 
-
-        # prediction = self.convResIn_final(interpol_input)
-        # prediction = self.resBlock_final(prediction)
-        # prediction = self.convResOut_final(prediction)
         prediction = self.res_stack_final(interpol_input)
         prediction = self.relu(prediction)
+
         return prediction
