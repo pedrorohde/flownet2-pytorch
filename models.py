@@ -525,9 +525,9 @@ class FlowNet2CSS(nn.Module):
 #         return self.flownet(x)
 
 class BasicResBlock(nn.Module):
-    def __init__(self, in_featuremaps, k_number=128, k_size=3):
+    def __init__(self, k_number=128, k_size=3):
         super(BasicResBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_featuremaps, k_number, kernel_size=k_size, stride=1,padding=1)
+        self.conv1 = nn.Conv2d(k_number, k_number, kernel_size=k_size, stride=1,padding=1)
         self.bn1 = nn.BatchNorm2d(k_number)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = nn.Conv2d(k_number, k_number, kernel_size=k_size, stride=1,padding=1)
@@ -548,39 +548,19 @@ class BasicResBlock(nn.Module):
 
         return out
 
-
-class ConcatResBlock(nn.Module):
-    def __init__(self, k_number=128, k_size=3, res_block_number=1):
-        super(ConcatResBlock, self).__init__()
-        self.res_blocks = [BasicResBlock(k_number, k_number, k_size) for _ in range(res_block_number)]
-        self.res_block_number = res_block_number
-        
-
-    def forward(self, x):
-        
-        out = x
-        for i in range(self.res_block_number):
-            out = self.res_blocks[i](out)
-
-        return out
-
-
 class ResidualStack(nn.Module):
     def __init__(self, in_channels=3, out_channels=3, res_kernel_number=128, res_block_number=10, k_size=3):
         super(ResidualStack, self).__init__()
         self.convResIn = nn.Conv2d(in_channels, res_kernel_number, kernel_size=k_size, stride=1, padding=1)
-        self.resBlocks = ConcatResBlock(
-            k_number=res_kernel_number,
-            k_size=k_size,
-            res_block_number=res_block_number
-        )
+        self.res_blocks = nn.ModuleList([BasicResBlock(res_kernel_number, k_size) for _ in range(res_block_number)])
         self.convResOut = nn.Conv2d(res_kernel_number, out_channels, kernel_size=k_size, stride=1, padding=1)
         
 
     def forward(self, x):
         out = x
         out = self.convResIn(out)
-        out = self.resBlocks(out)
+        for resBlock in self.res_blocks:
+            out = resBlock(out)
         out = self.convResOut(out)
 
         return out
@@ -629,7 +609,7 @@ class DummyModel(nn.Module):
         return prediction
 
 class InterpolNet(nn.Module):
-    def __init__(self, args, res_block_number=1):
+    def __init__(self, args, res_blkN=5, res_kN=128):
         super(InterpolNet,self).__init__()
         self.args = args
         
@@ -648,47 +628,43 @@ class InterpolNet(nn.Module):
                             tofp16()) 
         else:
             self.resample1 = Resample2d()
-        
-        res_kernel_number = 128
 
         self.res_stack_img1 = ResidualStack(
             in_channels=3,
             out_channels=3,
-            res_kernel_number=res_kernel_number,
-            res_block_number=res_block_number,
+            res_kernel_number=res_kN,
+            res_block_number=res_blkN,
             k_size=3
         )
         
         self.res_stack_img2 = ResidualStack(
             in_channels=3,
             out_channels=3,
-            res_kernel_number=res_kernel_number,
-            res_block_number=res_block_number,
+            res_kernel_number=res_kN,
+            res_block_number=res_blkN,
             k_size=3
         )
         
         self.res_stack_mid = ResidualStack(
             in_channels=3,
             out_channels=3,
-            res_kernel_number=res_kernel_number,
-            res_block_number=res_block_number,
+            res_kernel_number=res_kN,
+            res_block_number=res_blkN,
             k_size=3
         )
 
         self.res_stack_final = ResidualStack(
             in_channels=9,
             out_channels=3,
-            res_kernel_number=res_kernel_number,
-            res_block_number=res_block_number,
+            res_kernel_number=res_kN,
+            res_block_number=res_blkN,
             k_size=3
         )
 
-        # self.conv1 = nn.Conv2d(9, 3, kernel_size=5, stride=1, padding=1)
-        # self.conv2 = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
-        # self.conv3 = nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=1)
         self.relu = nn.ReLU()
 
         self.rgb_max = 255
+
     def forward(self, inputs):
         # Same as fnet2 input
         rgb_mean = inputs.contiguous().view(inputs.size()[:2]+(-1,)).mean(dim=-1).view(inputs.size()[:2] + (1,1,1,))
