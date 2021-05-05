@@ -70,7 +70,6 @@ if __name__ == '__main__':
     tools.add_arguments_for_module(parser, models, argument_for_class='model', default='FlowNet2')
 
     tools.add_arguments_for_module(parser, losses, argument_for_class='loss', default='L1Loss')
-
     tools.add_arguments_for_module(parser, torch.optim, argument_for_class='optimizer', default='Adam', skip_params=['params'])
     
     tools.add_arguments_for_module(parser, datasets, argument_for_class='training_dataset', default='MpiSintelFinal', 
@@ -116,7 +115,7 @@ if __name__ == '__main__':
         args.inference_dataset_class = tools.module_to_dict(datasets)[args.inference_dataset]
 
         args.cuda = not args.no_cuda and torch.cuda.is_available()
-        args.current_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).rstrip()
+        args.current_hash = 'asasasas'#subprocess.check_output(["git", "rev-parse", "HEAD"]).rstrip()
         args.save = args.save + f'/{args.model}_{args.optimizer}_{args.loss}/{now.strftime("%Y%m%d%H%M")}'
         args.log_file = join(args.save, 'args.txt')
 
@@ -233,8 +232,8 @@ if __name__ == '__main__':
         if not os.path.exists(args.save):
             os.makedirs(args.save)
 
-        train_logger = SummaryWriter(log_dir = os.path.join(args.save, 'train'), comment = 'training')
-        validation_logger = SummaryWriter(log_dir = os.path.join(args.save, 'validation'), comment = 'validation')
+        # train_logger = SummaryWriter(log_dir = os.path.join(args.save, 'train'), comment = 'training')
+        # validation_logger = SummaryWriter(log_dir = os.path.join(args.save, 'validation'), comment = 'validation')
         
         log_subpath = f'log/'
         unified_logger = SummaryWriter(log_dir = os.path.join(args.save, log_subpath), comment = f'{args.model}_{args.optimizer}_{args.loss}')
@@ -244,7 +243,7 @@ if __name__ == '__main__':
             'epochs': args.total_epochs,
             'sched_frac': args.schedule_lr_fraction,
             'sched_freq': args.schedule_lr_frequency,
-            'eps': args.optimizer_eps
+            # 'eps': args.optimizer_eps
             }
         metric_param_dict = {}
         unified_logger.add_hparams(hyper_param_dict, metric_param_dict)
@@ -266,7 +265,7 @@ if __name__ == '__main__':
         block.log2file(args.log_file, '{}: {}'.format(argument, value))
 
     # Reusable function for training and validataion
-    def train(args, epoch, start_iteration, data_loader, model, optimizer, logger, is_validate=False, offset=0, unified_logger=None, last_val_idx=0):
+    def train(args, epoch, start_iteration, data_loader, model, optimizer, is_validate=False, offset=0, unified_logger=None, last_val_idx=0):
         statistics = []
         total_loss = 0
         unified_tag = 'validation/' if is_validate else 'train/'
@@ -347,19 +346,19 @@ if __name__ == '__main__':
                     unified_logger.add_scalar(unified_tag+'average batch ' + str(key), all_losses[:, i].mean(), global_iteration)
                     unified_logger.add_histogram(unified_tag+str(key), all_losses[:, i], global_iteration)
 
-            if ((((global_iteration + 1) % args.log_frequency) == 0 and not is_validate) or
-                (is_validate and batch_idx == args.validation_n_batches - 1)):
+            # if ((((global_iteration + 1) % args.log_frequency) == 0 and not is_validate) or
+            #     (is_validate and batch_idx == args.validation_n_batches - 1)):
 
-                global_iteration = global_iteration if not is_validate else start_iteration
+                # global_iteration = global_iteration if not is_validate else start_iteration
 
-                logger.add_scalar('batch logs per second', len(statistics) / (progress._time() - last_log_time), global_iteration)
-                last_log_time = progress._time()
+                # logger.add_scalar('batch logs per second', len(statistics) / (progress._time() - last_log_time), global_iteration)
+                # last_log_time = progress._time()
 
-                all_losses = np.array(statistics)
+                # all_losses = np.array(statistics)
 
-                for i, key in enumerate(loss_labels):
-                    logger.add_scalar('average batch ' + str(key), all_losses[:, i].mean(), global_iteration)
-                    logger.add_histogram(str(key), all_losses[:, i], global_iteration)
+                # for i, key in enumerate(loss_labels):
+                #     logger.add_scalar('average batch ' + str(key), all_losses[:, i].mean(), global_iteration)
+                #     logger.add_histogram(str(key), all_losses[:, i], global_iteration)
 
             # Reset Summary
             statistics = []
@@ -433,13 +432,16 @@ if __name__ == '__main__':
                             join(flow_folder, '%06d.flo' % (batch_idx * args.inference_batch_size + i)),flow_vis_folder)
                    
             if args.save_frames:
+                from PIL import Image
                 for i in range(args.inference_batch_size):
+                    # import pdb; pdb.set_trace()
                     _pframe = output[i].data.cpu().numpy().transpose(1, 2, 0)
                     # _pframe = (_pframe*255).astype(int).clip(min=0,max=255)
-                    _pframe = (_pframe).astype(int).clip(min=0,max=255)
-                    import scipy.misc
+                    _pframe = (_pframe).astype(np.uint8).clip(min=0,max=255)
                     f_idx = (batch_idx * args.inference_batch_size + i)
-                    scipy.misc.toimage(_pframe, cmin=0, cmax=255).save(f'{frame_folder}/{f_idx:06d}.png')
+                    png_data = Image.fromarray(_pframe)
+                    png_data.save(f'{frame_folder}/{f_idx:06d}.png')
+
             progress.set_description('Inference Averages for Epoch {}: '.format(epoch) + tools.format_dictionary_of_losses(loss_labels, np.array(statistics).mean(axis=0)))
             progress.update(1)
 
@@ -463,7 +465,7 @@ if __name__ == '__main__':
             offset += 1
 
         if not args.skip_validation and ((epoch - 1) % args.validation_frequency) == 0:
-            validation_loss, iterations = train(args=args, epoch=epoch - 1, start_iteration=global_iteration, data_loader=validation_loader, model=model_and_loss, optimizer=optimizer, logger=validation_logger, is_validate=True, offset=offset, unified_logger=unified_logger, last_val_idx=validation_iteration)
+            validation_loss, iterations = train(args=args, epoch=epoch - 1, start_iteration=global_iteration, data_loader=validation_loader, model=model_and_loss, optimizer=optimizer, is_validate=True, offset=offset, unified_logger=unified_logger, last_val_idx=validation_iteration)
             validation_iteration += iterations
             offset += 1
             is_best = False
@@ -482,7 +484,7 @@ if __name__ == '__main__':
             offset += 1
 
         if not args.skip_training:
-            train_loss, iterations = train(args=args, epoch=epoch, start_iteration=global_iteration, data_loader=train_loader, model=model_and_loss, optimizer=optimizer, logger=train_logger, offset=offset, unified_logger=unified_logger)
+            train_loss, iterations = train(args=args, epoch=epoch, start_iteration=global_iteration, data_loader=train_loader, model=model_and_loss, optimizer=optimizer, offset=offset, unified_logger=unified_logger)
             global_iteration += iterations
             offset += 1
 
@@ -498,7 +500,7 @@ if __name__ == '__main__':
                 checkpoint_progress.close()
 
 
-        train_logger.add_scalar('seconds per epoch', progress._time() - last_epoch_time, epoch)
+        # train_logger.add_scalar('seconds per epoch', progress._time() - last_epoch_time, epoch)
         last_epoch_time = progress._time()
     print("\n")
 

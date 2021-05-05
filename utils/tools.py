@@ -72,7 +72,11 @@ def add_arguments_for_module(parser, module, argument_for_class, default, skip_p
             if arg in list(parameter_defaults.keys()):
                 argument_group.add_argument('--{}'.format(cmd_arg), type=type(parameter_defaults[arg]), default=parameter_defaults[arg])
             elif (defaults is not None and i < len(defaults)):
-                argument_group.add_argument('--{}'.format(cmd_arg), type=type(defaults[i]), default=defaults[i])
+                if arg == 'lr':
+                    arg_type = float
+                else:
+                    arg_type = type(defaults[i])
+                argument_group.add_argument('--{}'.format(cmd_arg), type=arg_type, default=defaults[i])
             else:
                 print(("[Warning]: non-default argument '{}' detected on class '{}'. This argument cannot be modified via the command line"
                         .format(arg, module.__class__.__name__)))

@@ -8,7 +8,8 @@ import numpy as np
 from glob import glob
 import utils.frame_utils as frame_utils
 
-from scipy.misc import imread, imresize
+# from scipy.misc import imread, imresize
+from imageio import imread
 
 class StaticRandomCrop(object):
     def __init__(self, image_size, crop_size):
@@ -439,10 +440,12 @@ class ImagesFromFolderInterpol(data.Dataset):
     elif annotation_file != '': #Vimeo90k
         print(f"[LOG] Loading Vimeo90k from .txt description")
         subdir_paths = [f"{root}/{x.strip()}/" for x in open(annotation_file)]
+        
         # if "test" in annotation_file:   
-        #     subdir_paths = subdir_paths[:50]
+        #     subdir_paths = subdir_paths[:5]
         # else:
-        #     subdir_paths = subdir_paths[:1000]
+        #     subdir_paths = subdir_paths[:50]
+        
         for subdir in subdir_paths:
             parseTrainData(subdir)
     else:

@@ -1,0 +1,3 @@
+# ninja log v5
+0	24261	1619806036057259272	/home/projects/flownet2-pytorch/networks/channelnorm_package/build/temp.linux-x86_64-3.7/channelnorm_cuda.o	12d6f803aed5b231
+0	29988	1619806041777289791	/home/projects/flownet2-pytorch/networks/channelnorm_package/build/temp.linux-x86_64-3.7/channelnorm_kernel.o	124b0e7d73a4b142

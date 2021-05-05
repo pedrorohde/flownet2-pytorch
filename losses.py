@@ -116,3 +116,17 @@ class MSSSIMLoss(nn.Module):
         lossvalue = (1 - ms_ssim(output, target, data_range=255.0, size_average=True))
         
         return [ lossvalue ]
+
+class MSSSIML1Loss(nn.Module):
+    def __init__(self, args):
+        super(MSSSIML1Loss, self).__init__()
+        self.args = args
+        self.w = 0.87 
+        self.loss_labels = ['MS-SSIM_L1']
+
+    def forward(self, output, target):
+        loss_mssim = (1 - ms_ssim(output, target, data_range=255.0, size_average=True))
+        diff = output - target
+        loss_l1 = torch.abs(output - target).mean()
+        lossvalue = self.w*loss_mssim + (1-self.w)*loss_l1
+        return [ lossvalue ]
