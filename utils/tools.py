@@ -26,11 +26,11 @@ class TimerBlock:
         print(("{}".format(title)))
 
     def __enter__(self):
-        self.start = time.clock()
+        self.start = time.process_time()#time.clock()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.end = time.clock()
+        self.end = time.process_time()#time.clock()
         self.interval = self.end - self.start
 
         if exc_type is not None:
@@ -40,7 +40,7 @@ class TimerBlock:
 
 
     def log(self, string):
-        duration = time.clock() - self.start
+        duration = time.process_time() - self.start
         units = 's'
         if duration > 60:
             duration = duration / 60.
@@ -107,9 +107,9 @@ class IteratorTimer():
         return len(self.iterable)
 
     def __next__(self):
-        start = time.time()
+        start = time.process_time()#time.time()
         n = next(self.iterator)
-        self.last_duration = (time.time() - start)
+        self.last_duration = (time.process_time() - start)
         return n
 
     next = __next__

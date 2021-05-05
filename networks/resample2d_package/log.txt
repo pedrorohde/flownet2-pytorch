@@ -1,0 +1,124 @@
+running install
+running bdist_egg
+running egg_info
+creating resample2d_cuda.egg-info
+writing resample2d_cuda.egg-info/PKG-INFO
+writing dependency_links to resample2d_cuda.egg-info/dependency_links.txt
+writing top-level names to resample2d_cuda.egg-info/top_level.txt
+writing manifest file 'resample2d_cuda.egg-info/SOURCES.txt'
+reading manifest file 'resample2d_cuda.egg-info/SOURCES.txt'
+writing manifest file 'resample2d_cuda.egg-info/SOURCES.txt'
+installing library code to build/bdist.linux-x86_64/egg
+running install_lib
+running build_ext
+building 'resample2d_cuda' extension
+creating /home/projects/flownet2-pytorch/networks/resample2d_package/build
+creating /home/projects/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.8
+Emitting ninja build file /home/projects/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.8/build.ninja...
+Compiling objects...
+Allowing ninja to set a default number of workers... (overridable by setting the environment variable MAX_JOBS=N)
+[1/2] /usr/local/cuda/bin/nvcc --generate-dependencies-with-compile --dependency-output /home/projects/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.8/resample2d_kernel.o.d -I/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include -I/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/torch/csrc/api/include -I/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/TH -I/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/THC -I/usr/local/cuda/include -I/root/miniconda3/envs/cuda11/include/python3.8 -c -c /home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu -o /home/projects/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.8/resample2d_kernel.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -gencode arch=compute_86,code=sm_86 -DTORCH_API_INCLUDE_EXTENSION_H '-DPYBIND11_COMPILER_TYPE="_gcc"' '-DPYBIND11_STDLIB="_libstdcpp"' '-DPYBIND11_BUILD_ABI="_cxxabi1011"' -DTORCH_EXTENSION_NAME=resample2d_cuda -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu: In function ‘void resample2d_kernel_forward(at::Tensor&, at::Tensor&, at::Tensor&, int, bool)’:
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:221:173: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_update_output<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                             ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:221:225: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_update_output<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                                                                                 ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:221:277: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_update_output<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                                                                                                                                     ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu: In function ‘void resample2d_kernel_backward(at::Tensor&, at::Tensor&, at::Tensor&, at::Tensor&, at::Tensor&, int, bool)’:
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:269:175: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_backward_input1<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                               ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:269:227: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_backward_input1<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                                                                                   ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:269:283: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_backward_input1<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                                                                                                                                           ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:269:347: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_backward_input1<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                                                                                                                                                                                                           ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:298:175: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_backward_input2<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                               ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:298:227: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_backward_input2<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                                                                                   ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:298:283: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_backward_input2<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                                                                                                                                           ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+/home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_kernel.cu:298:347: warning: ‘T* at::Tensor::data() const [with T = float]’ is deprecated: Tensor.data<T>() is deprecated. Please use Tensor.data_ptr<T>() instead. [-Wdeprecated-declarations]
+         kernel_resample2d_backward_input2<float><<< (n + CUDA_NUM_THREADS - 1)/CUDA_NUM_THREADS, CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream() >>>(
+                                                                                                                                                                                                                                                                                                                                                           ^
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/core/TensorBody.h:398:1: note: declared here
+   T * data() const {
+ ^ ~~
+[2/2] c++ -MMD -MF /home/projects/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.8/resample2d_cuda.o.d -pthread -B /root/miniconda3/envs/cuda11/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC -I/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include -I/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/torch/csrc/api/include -I/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/TH -I/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/THC -I/usr/local/cuda/include -I/root/miniconda3/envs/cuda11/include/python3.8 -c -c /home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_cuda.cc -o /home/projects/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.8/resample2d_cuda.o -std=c++14 -DTORCH_API_INCLUDE_EXTENSION_H '-DPYBIND11_COMPILER_TYPE="_gcc"' '-DPYBIND11_STDLIB="_libstdcpp"' '-DPYBIND11_BUILD_ABI="_cxxabi1011"' -DTORCH_EXTENSION_NAME=resample2d_cuda -D_GLIBCXX_USE_CXX11_ABI=0
+cc1plus: warning: command line option ‘-Wstrict-prototypes’ is valid for C/ObjC but not for C++
+In file included from /root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/Parallel.h:140:0,
+                 from /root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/torch/csrc/api/include/torch/utils.h:3,
+                 from /root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/torch/csrc/api/include/torch/nn/cloneable.h:5,
+                 from /root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/torch/csrc/api/include/torch/nn.h:3,
+                 from /root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/torch/csrc/api/include/torch/all.h:13,
+                 from /root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/torch/csrc/api/include/torch/torch.h:3,
+                 from /home/projects/flownet2-pytorch/networks/resample2d_package/resample2d_cuda.cc:2:
+/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/include/ATen/ParallelOpenMP.h:83:0: warning: ignoring #pragma omp parallel [-Wunknown-pragmas]
+ #pragma omp parallel for if ((end - begin) >= grain_size)
+ 
+creating build/lib.linux-x86_64-3.8
+g++ -pthread -shared -B /root/miniconda3/envs/cuda11/compiler_compat -L/root/miniconda3/envs/cuda11/lib -Wl,-rpath=/root/miniconda3/envs/cuda11/lib -Wl,--no-as-needed -Wl,--sysroot=/ /home/projects/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.8/resample2d_cuda.o /home/projects/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.8/resample2d_kernel.o -L/root/miniconda3/envs/cuda11/lib/python3.8/site-packages/torch/lib -L/usr/local/cuda/lib64 -lc10 -ltorch -ltorch_cpu -ltorch_python -lcudart -lc10_cuda -ltorch_cuda_cu -ltorch_cuda_cpp -o build/lib.linux-x86_64-3.8/resample2d_cuda.cpython-38-x86_64-linux-gnu.so
+creating build/bdist.linux-x86_64
+creating build/bdist.linux-x86_64/egg
+copying build/lib.linux-x86_64-3.8/resample2d_cuda.cpython-38-x86_64-linux-gnu.so -> build/bdist.linux-x86_64/egg
+creating stub loader for resample2d_cuda.cpython-38-x86_64-linux-gnu.so
+byte-compiling build/bdist.linux-x86_64/egg/resample2d_cuda.py to resample2d_cuda.cpython-38.pyc
+creating build/bdist.linux-x86_64/egg/EGG-INFO
+copying resample2d_cuda.egg-info/PKG-INFO -> build/bdist.linux-x86_64/egg/EGG-INFO
+copying resample2d_cuda.egg-info/SOURCES.txt -> build/bdist.linux-x86_64/egg/EGG-INFO
+copying resample2d_cuda.egg-info/dependency_links.txt -> build/bdist.linux-x86_64/egg/EGG-INFO
+copying resample2d_cuda.egg-info/top_level.txt -> build/bdist.linux-x86_64/egg/EGG-INFO
+writing build/bdist.linux-x86_64/egg/EGG-INFO/native_libs.txt
+creating dist
+creating 'dist/resample2d_cuda-0.0.0-py3.8-linux-x86_64.egg' and adding 'build/bdist.linux-x86_64/egg' to it
+removing 'build/bdist.linux-x86_64/egg' (and everything under it)
+Processing resample2d_cuda-0.0.0-py3.8-linux-x86_64.egg
+creating /root/.local/lib/python3.8/site-packages/resample2d_cuda-0.0.0-py3.8-linux-x86_64.egg
+Extracting resample2d_cuda-0.0.0-py3.8-linux-x86_64.egg to /root/.local/lib/python3.8/site-packages
+Adding resample2d-cuda 0.0.0 to easy-install.pth file
+
+Installed /root/.local/lib/python3.8/site-packages/resample2d_cuda-0.0.0-py3.8-linux-x86_64.egg
+Processing dependencies for resample2d-cuda==0.0.0
+Finished processing dependencies for resample2d-cuda==0.0.0

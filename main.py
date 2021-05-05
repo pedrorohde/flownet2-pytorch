@@ -116,7 +116,7 @@ if __name__ == '__main__':
         args.inference_dataset_class = tools.module_to_dict(datasets)[args.inference_dataset]
 
         args.cuda = not args.no_cuda and torch.cuda.is_available()
-        args.current_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).rstrip()
+        args.current_hash = 'adasdasdasd'#subprocess.check_output(["git", "rev-parse", "HEAD"]).rstrip()
         args.save = args.save + f'/{args.model}_{args.optimizer}_{args.loss}/{now.strftime("%Y%m%d%H%M")}'
         args.log_file = join(args.save, 'args.txt')
 

@@ -8,8 +8,9 @@ import numpy as np
 from glob import glob
 import utils.frame_utils as frame_utils
 
-from scipy.misc import imread, imresize
-
+# from scipy.misc import imread, imresize
+from PIL import Image
+from imageio import imread
 class StaticRandomCrop(object):
     def __init__(self, image_size, crop_size):
         self.th, self.tw = crop_size
