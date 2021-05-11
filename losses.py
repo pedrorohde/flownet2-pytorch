@@ -7,6 +7,7 @@ Portions of this code copyright 2017, Clement Pinard
 import torch
 import torch.nn as nn
 import math
+from pytorch_msssim import ms_ssim, MS_SSIM
 
 def EPE(input_flow, target_flow):
     return torch.norm(target_flow-input_flow,p=2,dim=1).mean()
@@ -105,7 +106,6 @@ class L2InterpolLoss(nn.Module):
         lossvalue = torch.norm(output-target,p=2,dim=1).mean()
         return [lossvalue]
 
-from pytorch_msssim import ms_ssim
 class MSSSIMLoss(nn.Module):
     def __init__(self, args):
         super(MSSSIMLoss, self).__init__()
@@ -121,12 +121,19 @@ class MSSSIML1Loss(nn.Module):
     def __init__(self, args):
         super(MSSSIML1Loss, self).__init__()
         self.args = args
-        self.w = 0.87 
+        self.w = 0.84 # empirically set (see paper) 
         self.loss_labels = ['MS-SSIM_L1']
 
+        self.MS_SSIM = MS_SSIM(
+            data_range=255.0,
+            size_average=True,
+            # win_size=[tamanho do quadro],
+            win_sigma=0.5, # smallest filter (see paper)
+            weights=[1.]*5 # no different weights for each level (check if true)
+        )
+
     def forward(self, output, target):
-        loss_mssim = (1 - ms_ssim(output, target, data_range=255.0, size_average=True))
-        diff = output - target
+        loss_mssim = 1 - self.MS_SSIM(output, target)
         loss_l1 = torch.abs(output - target).mean()
         lossvalue = self.w*loss_mssim + (1-self.w)*loss_l1
         return [ lossvalue ]
