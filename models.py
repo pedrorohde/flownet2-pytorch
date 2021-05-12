@@ -691,3 +691,72 @@ class InterpolNet(nn.Module):
         prediction = self.relu(prediction)
 
         return prediction
+
+
+
+class InterpolNetOld(nn.Module):
+    def __init__(self, args):
+        super(InterpolNetOld,self).__init__()
+        self.args = args
+        
+        # flownet predictor
+        self.flownet = FlowNet2(args)
+        checkpoint = torch.load("./checkpoints/FlowNet2_checkpoint.pth.tar")
+        self.flownet.load_state_dict(checkpoint['state_dict'])
+        self.flownet.training = False
+        for param in self.flownet.parameters():
+            param.requires_grad = False
+        if args.fp16:
+            self.resample1 = nn.Sequential(
+                            tofp32(), 
+                            Resample2d(),
+                            tofp16()) 
+        else:
+            self.resample1 = Resample2d()
+        
+        res_kernel_number = 128
+        self.convResIn_img1 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_img1 = BasicResBlock(res_kernel_number)
+        self.convResOut_img1 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        
+        self.convResIn_img2 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_img2 = BasicResBlock(res_kernel_number)
+        self.convResOut_img2 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        
+        self.convResIn_mid = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_mid = BasicResBlock(res_kernel_number)
+        self.convResOut_mid = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        self.convResIn_final = nn.Conv2d(9, res_kernel_number, kernel_size=3, stride=1, padding=1)
+        self.resBlock_final = BasicResBlock(res_kernel_number)
+        self.convResOut_final = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+        self.relu = nn.ReLU()
+
+        self.rgb_max = 255
+    def forward(self, inputs):
+        # Same as fnet2 input
+        rgb_mean = inputs.contiguous().view(inputs.size()[:2]+(-1,)).mean(dim=-1).view(inputs.size()[:2] + (1,1,1,))
+        
+        x = (inputs - rgb_mean) / self.rgb_max
+        x1 = x[:,:,0,:,:]
+        x1 = self.convResIn_img1(x1)
+        x1 = self.resBlock_img1(x1)
+        x1 = self.convResOut_img1(x1)
+        
+        x2 = x[:,:,1,:,:]
+        x2 = self.convResIn_img2(x2)
+        x2 = self.resBlock_img2(x2)
+        x2 = self.convResOut_img2(x2)
+        
+        x = torch.cat((x1,x2), dim = 1)
+        flow = self.flownet(inputs)
+        warped_mid = self.resample1(x[:,3:,:,:], flow)
+        warped_mid = self.convResIn_mid(warped_mid)
+        warped_mid = self.resBlock_mid(warped_mid)
+        warped_mid = self.convResOut_mid(warped_mid)
+        
+        interpol_input = torch.cat((x1,x2, warped_mid), dim = 1)
+        prediction = self.convResIn_final(interpol_input)
+        prediction = self.resBlock_final(prediction)
+        prediction = self.convResOut_final(prediction)
+        prediction = self.relu(prediction)
+        return prediction 

@@ -57,6 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--inference_n_batches', type=int, default=-1)
     parser.add_argument('--save_flow', action='store_true', help='save predicted flows to file')
     parser.add_argument('--save_frames', action='store_true', help='save predicted frames to file')
+    parser.add_argument('--save_inferenceLog', action='store_true', help='save inference results')
 
     parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--log_frequency', '--summ_iter', type=int, default=1, help="Log every n batches")
@@ -116,7 +117,8 @@ if __name__ == '__main__':
 
         args.cuda = not args.no_cuda and torch.cuda.is_available()
         args.current_hash = 'asasasas'#subprocess.check_output(["git", "rev-parse", "HEAD"]).rstrip()
-        args.save = args.save + f'/{args.model}_{args.optimizer}_{args.loss}/{now.strftime("%Y%m%d%H%M")}'
+        if not args.inference: 
+            args.save = args.save + f'/{args.model}_{args.optimizer}_{args.loss}/{now.strftime("%Y%m%d%H%M")}'
         args.log_file = join(args.save, 'args.txt')
 
         # dict to collect activation gradients (for training debug purpose)
@@ -383,20 +385,35 @@ if __name__ == '__main__':
             flow_folder = "{}/inference/{}.epoch-{}-flow-field".format(args.save,args.name.replace('/', '.'),epoch)
             if not os.path.exists(flow_folder):
                 os.makedirs(flow_folder)
-        if args.save_frames:
-            frame_folder = "{}/inference/{}.epoch-{}-interpol-frames".format(args.save,args.name.replace('/', '.'),epoch)
-            if not os.path.exists(frame_folder):
-                os.makedirs(frame_folder)
+
         # visualization folder
         if args.inference_visualize:
             flow_vis_folder = "{}/inference/{}.epoch-{}-flow-vis".format(args.save, args.name.replace('/', '.'), epoch)
             if not os.path.exists(flow_vis_folder):
                 os.makedirs(flow_vis_folder)
+
+        if args.save_frames or args.save_inferenceLog:
+            inference_folder = "{}/{}.epoch-{}".format(args.save,args.name.replace('/', '.'),epoch)
+            if not os.path.exists(inference_folder):
+                os.makedirs(inference_folder)
+
         
         args.inference_n_batches = np.inf if args.inference_n_batches < 0 else args.inference_n_batches
 
         progress = tqdm(data_loader, ncols=100, total=np.minimum(len(data_loader), args.inference_n_batches), desc='Inferencing ', 
             leave=True, position=offset)
+
+        print('[LOG] We assume that "inference_batch_size" arg is always 1')
+        if data_loader.dataset.ref_names == None:
+            f_names = [f'{f_idx:06d}.png' for f_idx in range(len(data_loader))]
+        else:
+            f_names = data_loader.dataset.ref_names
+        
+        if args.save_inferenceLog:
+            log_labels = ['filename'] + list(model.module.loss.loss_labels)
+            log_dict = {l:{} for l in log_labels}
+            for i in range(len(data_loader)):
+                log_dict['filename'][i] = f_names[i]
 
         statistics = []
         total_loss = 0
@@ -409,9 +426,9 @@ if __name__ == '__main__':
             # the targets are set to all zeros. thus, losses are actually L1 or L2 norms of compute optical flows, 
             # depending on the type of loss norm passed in
             with torch.no_grad():
-                losses, output = model(data[0], target[0], inference=True)
+                pred_losses, output = model(data[0], target[0], inference=True)
 
-            losses = [torch.mean(loss_value) for loss_value in losses] 
+            losses = [torch.mean(loss_value) for loss_value in pred_losses] 
             loss_val = losses[0] # Collect first loss for weight update
             total_loss += loss_val.item()
             loss_values = [v.item() for v in losses]
@@ -433,14 +450,15 @@ if __name__ == '__main__':
                    
             if args.save_frames:
                 from PIL import Image
-                for i in range(args.inference_batch_size):
-                    # import pdb; pdb.set_trace()
-                    _pframe = output[i].data.cpu().numpy().transpose(1, 2, 0)
-                    # _pframe = (_pframe*255).astype(int).clip(min=0,max=255)
-                    _pframe = (_pframe).astype(np.uint8).clip(min=0,max=255)
-                    f_idx = (batch_idx * args.inference_batch_size + i)
-                    png_data = Image.fromarray(_pframe)
-                    png_data.save(f'{frame_folder}/{f_idx:06d}.png')
+                _pframe = output[0].data.cpu().numpy().transpose(1, 2, 0)
+                _pframe = (_pframe).clip(min=0,max=255).astype(np.uint8)
+                f_name = f_names[batch_idx]
+                png_data = Image.fromarray(_pframe)
+                png_data.save(f'{inference_folder}/{f_name}')
+
+            if args.save_inferenceLog:
+                for label, loss in zip(loss_labels, pred_losses):
+                    log_dict[label][batch_idx] = str(loss.cpu().numpy())
 
             progress.set_description('Inference Averages for Epoch {}: '.format(epoch) + tools.format_dictionary_of_losses(loss_labels, np.array(statistics).mean(axis=0)))
             progress.update(1)
@@ -449,7 +467,10 @@ if __name__ == '__main__':
                 break
 
         progress.close()
-
+        if args.save_inferenceLog:
+            import json
+            with open(f'{inference_folder}/log.json', 'w') as fp:
+                json.dump(log_dict, fp, sort_keys=True, indent=4)
         return
 
     # Primary epoch loop
