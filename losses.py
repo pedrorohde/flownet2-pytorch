@@ -7,7 +7,7 @@ Portions of this code copyright 2017, Clement Pinard
 import torch
 import torch.nn as nn
 import math
-from pytorch_msssim import ms_ssim, MS_SSIM
+import pytorch_msssim
 
 def EPE(input_flow, target_flow):
     return torch.norm(target_flow-input_flow,p=2,dim=1).mean()
@@ -113,7 +113,7 @@ class MSSSIMLoss(nn.Module):
         self.loss_labels = ['MS-SSIM']
 
     def forward(self, output, target):
-        lossvalue = (1 - ms_ssim(output, target, data_range=255.0, size_average=True))
+        lossvalue = (1 - pytorch_msssim.ms_ssim(output, target, data_range=255.0, size_average=True))
         
         return [ lossvalue ]
 
@@ -124,16 +124,18 @@ class MSSSIML1Loss(nn.Module):
         self.w = 0.84 # empirically set (see paper) 
         self.loss_labels = ['MS-SSIM_L1']
 
-        self.MS_SSIM = MS_SSIM(
+        self.MS_SSIM = pytorch_msssim.MS_SSIM(
             data_range=255.0,
             size_average=True,
-            # win_size=[tamanho do quadro],
-            win_sigma=0.5, # smallest filter (see paper)
             weights=[1.]*5 # no different weights for each level (check if true)
         )
+
+        win = pytorch_msssim._fspecial_gauss_1d(size=11, sigma=1.5)
+        # apply gaussian filter and cast window to input's device/dtype
+        self.gaussian_filter = lambda X: pytorch_msssim.gaussian_filter(X, win.to(X.device, dtype=X.dtype))
 
     def forward(self, output, target):
         loss_mssim = 1 - self.MS_SSIM(output, target)
         loss_l1 = torch.abs(output - target).mean()
-        lossvalue = self.w*loss_mssim + (1-self.w)*loss_l1
+        lossvalue = self.w*loss_mssim + (1-self.w)*self.gaussian_filter(loss_l1)
         return [ lossvalue ]
