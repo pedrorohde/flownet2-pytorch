@@ -130,12 +130,14 @@ class MSSSIML1Loss(nn.Module):
             weights=[1.]*5 # no different weights for each level (check if true)
         )
 
+        # use default values from pytorch-msssim (TODO: maybe change this?)
         win = pytorch_msssim._fspecial_gauss_1d(size=11, sigma=1.5)
         # apply gaussian filter and cast window to input's device/dtype
         self.gaussian_filter = lambda X: pytorch_msssim.gaussian_filter(X, win.to(X.device, dtype=X.dtype))
 
     def forward(self, output, target):
         loss_mssim = 1 - self.MS_SSIM(output, target)
-        loss_l1 = torch.abs(output - target).mean()
-        lossvalue = self.w*loss_mssim + (1-self.w)*self.gaussian_filter(loss_l1)
+        loss_l1 = torch.abs(output - target)
+        # TODO: check if it should be .mean or .sum
+        lossvalue = self.w*loss_mssim + (1-self.w)*self.gaussian_filter(loss_l1).mean()
         return [ lossvalue ]
