@@ -432,25 +432,29 @@ class ImagesFromFolderInterpol(data.Dataset):
             im2 = images[i+2]
             self.in_imgs += [ [ im1, im2 ] ]
             self.ref_imgs += [ [ ref ] ]
+
     if scanSubdir:
         print(f"[WARNING]: assuming that all samples have the same or higher resolution than {self.crop_size}")
         subdir_paths = [f.path for f in os.scandir(root) if f.is_dir()]
         for subdir in subdir_paths:
             parseTrainData(subdir)
+
     elif annotation_file != '': #Vimeo90k
-        print(f"[LOG] Loading Vimeo90k from .txt description")
+        print("[LOG] Loading Vimeo90k from .txt description")
         subdir_paths = [f"{root}/{x.strip()}/" for x in open(annotation_file)]
-        
+        self.ref_names = [f"{x.strip().replace('/', '_')}.png" for x in open(annotation_file)]
         # if "test" in annotation_file:   
-        #     subdir_paths = subdir_paths[:5]
+        #     subdir_paths = subdir_paths[:20]
         # else:
-        #     subdir_paths = subdir_paths[:50]
+        #     subdir_paths = subdir_paths[:40]
         
         for subdir in subdir_paths:
             parseTrainData(subdir)
+        
+        self.ref_names
     else:
         parseTrainData(root)
-
+        self.ref_names = [x[0].split('/')[-1] for x in self.ref_imgs]
     self.size = len(self.in_imgs)
     print(f"Total samples: {self.size}")
 

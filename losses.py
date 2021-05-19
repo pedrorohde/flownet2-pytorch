@@ -141,3 +141,17 @@ class MSSSIML1Loss(nn.Module):
         # TODO: check if it should be .mean or .sum
         lossvalue = self.w*loss_mssim + (1-self.w)*self.gaussian_filter(loss_l1).mean()
         return [ lossvalue ]
+
+class InferenceEval(nn.Module):
+    def __init__(self, args):
+        super(InferenceEval, self).__init__()
+        self.args = args
+        self.loss_labels = ['MS-SSIM', 'L1', 'L2']
+        self.lossL1 = L1()
+        self.lossL2 = L2()
+
+    def forward(self, output, target):
+        lossL1 = self.lossL1(output, target)
+        lossL2 = self.lossL2(output, target)
+        msssim_val = ms_ssim(output, target, data_range=255.0, size_average=True)
+        return [ msssim_val, lossL1, lossL2 ]
