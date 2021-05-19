@@ -444,15 +444,17 @@ class ImagesFromFolderInterpol(data.Dataset):
         subdir_paths = [f"{root}/{x.strip()}/" for x in open(annotation_file)]
         self.ref_names = [f"{x.strip().replace('/', '_')}.png" for x in open(annotation_file)]
         # if "test" in annotation_file:   
-        #     subdir_paths = subdir_paths[:5]
+        #     subdir_paths = subdir_paths[:20]
         # else:
-        #     subdir_paths = subdir_paths[:10]
+        #     subdir_paths = subdir_paths[:40]
         
         for subdir in subdir_paths:
             parseTrainData(subdir)
+        
+        self.ref_names
     else:
         parseTrainData(root)
-
+        self.ref_names = [x[0].split('/')[-1] for x in self.ref_imgs]
     self.size = len(self.in_imgs)
     print(f"Total samples: {self.size}")
 
