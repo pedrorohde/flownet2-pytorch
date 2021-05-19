@@ -7,6 +7,7 @@ Portions of this code copyright 2017, Clement Pinard
 import torch
 import torch.nn as nn
 import math
+import pytorch_msssim
 
 def EPE(input_flow, target_flow):
     return torch.norm(target_flow-input_flow,p=2,dim=1).mean()
@@ -105,7 +106,6 @@ class L2InterpolLoss(nn.Module):
         lossvalue = torch.norm(output-target,p=2,dim=1).mean()
         return [lossvalue]
 
-from pytorch_msssim import ms_ssim
 class MSSSIMLoss(nn.Module):
     def __init__(self, args):
         super(MSSSIMLoss, self).__init__()
@@ -113,7 +113,7 @@ class MSSSIMLoss(nn.Module):
         self.loss_labels = ['MS-SSIM']
 
     def forward(self, output, target):
-        lossvalue = (1 - ms_ssim(output, target, data_range=255.0, size_average=True))
+        lossvalue = (1 - pytorch_msssim.ms_ssim(output, target, data_range=255.0, size_average=True))
         
         return [ lossvalue ]
 
@@ -121,14 +121,25 @@ class MSSSIML1Loss(nn.Module):
     def __init__(self, args):
         super(MSSSIML1Loss, self).__init__()
         self.args = args
-        self.w = 0.87 
+        self.w = 0.84 # empirically set (see paper) 
         self.loss_labels = ['MS-SSIM_L1']
 
+        self.MS_SSIM = pytorch_msssim.MS_SSIM(
+            data_range=255.0,
+            size_average=True,
+            weights=[1.]*5 # no different weights for each level (check if true)
+        )
+
+        # use default values from pytorch-msssim (TODO: maybe change this?)
+        win = pytorch_msssim._fspecial_gauss_1d(size=11, sigma=1.5)
+        # apply gaussian filter and cast window to input's device/dtype
+        self.gaussian_filter = lambda X: pytorch_msssim.gaussian_filter(X, win.to(X.device, dtype=X.dtype))
+
     def forward(self, output, target):
-        loss_mssim = (1 - ms_ssim(output, target, data_range=255.0, size_average=True))
-        diff = output - target
-        loss_l1 = torch.abs(output - target).mean()
-        lossvalue = self.w*loss_mssim + (1-self.w)*loss_l1
+        loss_mssim = 1 - self.MS_SSIM(output, target)
+        loss_l1 = torch.abs(output - target)
+        # TODO: check if it should be .mean or .sum
+        lossvalue = self.w*loss_mssim + (1-self.w)*self.gaussian_filter(loss_l1).mean()
         return [ lossvalue ]
 
 class InferenceEval(nn.Module):
