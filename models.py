@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import init
+from torch.autograd import Variable
 
 import math
 import numpy as np
@@ -636,7 +637,6 @@ class InterpolNet(nn.Module):
         # Same as fnet2 input
         self.flownet.training = False
         rgb_mean = inputs.contiguous().view(inputs.size()[:2]+(-1,)).mean(dim=-1).view(inputs.size()[:2] + (1,1,1,))
-        
         x = (inputs - rgb_mean) / self.rgb_max
 
         x1 = x[:,:,0,:,:]
@@ -658,8 +658,6 @@ class InterpolNet(nn.Module):
         prediction = self.relu(prediction)
 
         return prediction
-
-
 
 class InterpolNetOld(nn.Module):
     def __init__(self, args):
@@ -727,3 +725,108 @@ class InterpolNetOld(nn.Module):
         prediction = self.convResOut_final(prediction)
         prediction = self.relu(prediction)
         return prediction 
+
+
+
+
+
+class InterpolNet_lumma(nn.Module):
+    def __init__(self, args, res_blkN=5, res_kN=128):
+        super(InterpolNet_lumma,self).__init__()
+        self.args = args
+        # flownet predictor
+        # self.flownet = FlowNet2(args)
+        # checkpoint_file = "./checkpoints/FlowNet2_checkpoint.pth.tar"
+        self.flownet = FlowNet2S(args)
+        checkpoint_file = "./checkpoints/FlowNet2-S_checkpoint.pth.tar"
+        checkpoint = torch.load(checkpoint_file)
+        self.flownet.load_state_dict(checkpoint['state_dict'])
+        self.flownet.training = False
+        for param in self.flownet.parameters():
+            param.requires_grad = False
+
+        if args.fp16:
+            self.resample1 = nn.Sequential(
+                            tofp32(), 
+                            Resample2d(),
+                            tofp16()) 
+        else:
+            self.resample1 = Resample2d()
+
+        self.res_stack_img1 = ResidualStack(
+            in_channels=1,
+            out_channels=1,
+            res_kernel_number=res_kN,
+            res_block_number=res_blkN,
+            k_size=3
+        )
+        
+        self.res_stack_img2 = ResidualStack(
+            in_channels=1,
+            out_channels=1,
+            res_kernel_number=res_kN,
+            res_block_number=res_blkN,
+            k_size=3
+        )
+        
+        self.res_stack_mid = ResidualStack(
+            in_channels=1,
+            out_channels=1,
+            res_kernel_number=res_kN,
+            res_block_number=res_blkN,
+            k_size=3
+        )
+
+        self.res_stack_final = ResidualStack(
+            in_channels=3,
+            out_channels=1,
+            res_kernel_number=res_kN,
+            res_block_number=res_blkN,
+            k_size=3
+        )
+
+        self.relu = nn.ReLU()
+
+        self.rgb_max = 255
+
+    def forward(self, inputs):
+        # Same as fnet2 input
+        self.flownet.training = False
+
+        flow = self.flownet(inputs)
+
+        def rgb2lumma(img):#inputs: [b, Ch, f, h, w]
+            kb, kr = 0.0593, 0.2627
+            kg = 1.0 - kb - kr
+            new_shape = inputs.size()[:1]+(1,)+inputs.size()[2:]
+            output = Variable(inputs.data.new(*new_shape))
+            output[:,0,:,:,:] = img[:, 0, :, :, :] * kb + img[:, 1, :, :, :] * kr + img[:, 2, :, :, :] * kg
+            return output
+
+
+        y_inputs = rgb2lumma(inputs)
+        # y_inputs tem que ter 5 dim: [b, Ch, f, h, w]
+        # import pdb; pdb.set_trace()
+        y_mean = y_inputs.contiguous().view(y_inputs.size()[:2]+(-1,)).mean(dim=-1).view(y_inputs.size()[:2] + (1,1,1,))
+        
+        x = (y_inputs - y_mean) / self.rgb_max
+
+        x1 = x[:,:,0,:,:]
+        x1 = self.res_stack_img1(x1)
+        
+        x2 = x[:,:,1,:,:]
+        x2 = self.res_stack_img2(x2)
+
+        
+        
+        x = torch.cat((x1,x2), dim = 1)
+
+        warped_mid = self.resample1(x[:,1:,:,:], flow)
+        warped_mid = self.res_stack_mid(warped_mid)
+        
+        interpol_input = torch.cat((x1,x2, warped_mid), dim = 1)
+
+        prediction = self.res_stack_final(interpol_input)
+        prediction = self.relu(prediction)
+
+        return prediction

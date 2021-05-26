@@ -1,5 +1,7 @@
 import torch
 import torch.utils.data as data
+from torch.autograd import Variable
+
 
 import os, math, random
 from os.path import *
@@ -488,6 +490,95 @@ class ImagesFromFolderInterpol(data.Dataset):
     ref_img = (np.array(ref_img).transpose(2,0,1))#/self.rgb_max
     ref_img = torch.from_numpy(ref_img.astype(np.float32))
 
+    return [in_images], [ref_img]
+
+  def __len__(self):
+    return self.size * self.replicates
+
+
+class ImagesFromFolderInterpol_lumma(data.Dataset):
+  def __init__(self, args, is_cropped=False, scanSubdir=False, annotation_file='', root = '/path/to/frames/only/folder', iext = 'png', replicates = 1):
+    self.args = args
+    self.render_size = [-1,-1]
+    self.is_cropped = is_cropped
+    self.crop_size = args.crop_size
+    self.replicates = replicates
+    self.rgb_max = 255
+    
+    self.in_imgs = []
+    self.ref_imgs = []
+    def parseTrainData(path):
+        images = sorted( glob( join(path, '*.' + iext) ) )
+        for i in range(0,len(images)-2, 2):
+            im1 = images[i]
+            ref = images[i+1]
+            im2 = images[i+2]
+            self.in_imgs += [ [ im1, im2 ] ]
+            self.ref_imgs += [ [ ref ] ]
+
+    if scanSubdir:
+        print(f"[WARNING]: assuming that all samples have the same or higher resolution than {self.crop_size}")
+        subdir_paths = [f.path for f in os.scandir(root) if f.is_dir()]
+        for subdir in subdir_paths:
+            parseTrainData(subdir)
+
+    elif annotation_file != '': #Vimeo90k
+        print("[LOG] Loading Vimeo90k from .txt description")
+        subdir_paths = [f"{root}/{x.strip()}/" for x in open(annotation_file)]
+        self.ref_names = [f"{x.strip().replace('/', '_')}.png" for x in open(annotation_file)]
+        # if "test" in annotation_file:   
+        #     subdir_paths = subdir_paths[:20]
+        # else:
+        #     subdir_paths = subdir_paths[:40]
+        
+        for subdir in subdir_paths:
+            parseTrainData(subdir)
+        
+        self.ref_names
+    else:
+        parseTrainData(root)
+        self.ref_names = [x[0].split('/')[-1] for x in self.ref_imgs]
+    self.size = len(self.in_imgs)
+    print(f"Total samples: {self.size}")
+
+    self.frame_size = frame_utils.read_gen(self.in_imgs[0][0]).shape
+    if (self.render_size[0] < 0) or (self.render_size[1] < 0) or (self.frame_size[0]%64) or (self.frame_size[1]%64):
+        self.render_size[0] = ( (self.frame_size[0])//64 ) * 64
+        self.render_size[1] = ( (self.frame_size[1])//64 ) * 64
+
+    args.inference_size = self.render_size
+
+    assert (len(self.in_imgs) == len(self.ref_imgs))
+
+  def __getitem__(self, index):
+    index = index % self.size
+
+    in_img1 = frame_utils.read_gen(self.in_imgs[index][0])
+    in_img2 = frame_utils.read_gen(self.in_imgs[index][1])
+    ref_img = frame_utils.read_gen(self.ref_imgs[index][0])
+
+    in_images = [in_img1, in_img2]
+    image_size = in_img1.shape[:2]
+    if self.is_cropped:
+        cropper = StaticRandomCrop(image_size, self.crop_size)
+    else:
+        cropper = StaticCenterCrop(image_size, self.render_size)
+
+    in_images = list(map(cropper, in_images))
+    in_images = np.array(in_images).transpose(3,0,1,2)
+    in_images = torch.from_numpy(in_images.astype(np.float32))
+    ref_img = cropper(ref_img)
+    ref_img = (np.array(ref_img).transpose(2,0,1))#/self.rgb_max
+    ref_img = torch.from_numpy(ref_img.astype(np.float32))
+    def rgb2lumma(img):
+        kb, kr = 0.0593, 0.2627
+        kg = 1.0 - kb - kr
+        new_shape = (1,)+img.size()[1:]
+        output = Variable(img.data.new(*new_shape))
+        output[0, :, :] = img[0, :, :] * kb + img[1, :, :] * kr + img[2, :, :] * kg
+        return output
+
+    ref_img = rgb2lumma(ref_img)
     return [in_images], [ref_img]
 
   def __len__(self):
