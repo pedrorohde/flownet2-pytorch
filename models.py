@@ -504,26 +504,6 @@ class FlowNet2CSS(nn.Module):
 
         return flownets2_flow
 
-
-# class InterpolNet(nn.Module):
-
-#     def __init__(self, *args, **kwargs):
-#         self.flownet = FlowNet2(*args, **kwargs)
-    
-#     def fowrward(self, x):
-#         return self.flownet(x)
-
-
-# class InterpolNet(nn.Module):
-
-#     def __init__(self, flownet, weights_path, *args, **kwargs):
-#         self.flownet = flownet(*args, **kwargs)
-#         self.checkpoint_path = torch.load(weights_path)
-#         self.flownet.module.model.load_state_dict(self.checkpoint_path['state_dict'])
-    
-#     def fowrward(self, x):
-#         return self.flownet(x)
-
 class BasicResBlock(nn.Module):
     def __init__(self, k_number=128, k_size=3):
         super(BasicResBlock, self).__init__()
@@ -570,43 +550,28 @@ class DummyModel(nn.Module):
     def __init__(self, args):
         super(DummyModel,self).__init__()
         self.args = args
-        
-        res_kernel_number = 8
-        self.convResIn_img1 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        self.resBlock_img1 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        self.convResOut_img1 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
-        
-        self.convResIn_img2 = nn.Conv2d(3, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        self.resBlock_img2 = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        self.convResOut_img2 = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
-        
-        self.convResIn_final = nn.Conv2d(6, res_kernel_number, kernel_size=3, stride=1, padding=1)
-        self.resBlock_final = BasicResBlock(res_kernel_number, k_number=res_kernel_number)
-        self.convResOut_final = nn.Conv2d(res_kernel_number, 3, kernel_size=3, stride=1, padding=1)
+
+        self.flownet = FlowNet2S(args)
+        checkpoint_file = "./checkpoints/FlowNet2-S_checkpoint.pth.tar"
+        checkpoint = torch.load(checkpoint_file)
+        self.flownet.load_state_dict(checkpoint['state_dict'])
+        # self.flownet.training = False
+        # for param in self.flownet.parameters():
+        #     param.requires_grad = False
+
+        if args.fp16:
+            self.resample1 = nn.Sequential(
+                            tofp32(), 
+                            Resample2d(),
+                            tofp16()) 
+        else:
+            self.resample1 = Resample2d()
 
         self.rgb_max = 255
+
     def forward(self, inputs):
-        # Same as fnet2 input
-        rgb_mean = inputs.contiguous().view(inputs.size()[:2]+(-1,)).mean(dim=-1).view(inputs.size()[:2] + (1,1,1,))
-        
-        x = (inputs - rgb_mean) / self.rgb_max
-        x1 = x[:,:,0,:,:]
-        x1 = self.convResIn_img1(x1)
-        x1 = self.resBlock_img1(x1)
-        x1 = self.convResOut_img1(x1)
-        
-        x2 = x[:,:,1,:,:]
-        x2 = self.convResIn_img2(x2)
-        x2 = self.resBlock_img2(x2)
-        x2 = self.convResOut_img2(x2)
-
-        
-        x = torch.cat((x1,x2), dim = 1)
-
-        prediction = self.convResIn_final(x)
-        prediction = self.resBlock_final(prediction)
-        prediction = self.convResOut_final(prediction)
-        return prediction
+        flow = self.flownet(inputs)
+        return self.resample1(inputs[:3:,:,:], flow)
 
 class InterpolNet(nn.Module):
     def __init__(self, args, res_blkN=5, res_kN=128):

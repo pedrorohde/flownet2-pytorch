@@ -123,23 +123,28 @@ class MSSSIML1Loss(nn.Module):
         self.args = args
         self.w = 0.84 # empirically set (see paper) 
         self.loss_labels = ['MS-SSIM_L1']
-
+        self.max_val = 255.0
         self.MS_SSIM = pytorch_msssim.MS_SSIM(
-            data_range=255.0,
+            data_range=self.max_val,
             size_average=True,
             weights=[1.]*5 # no different weights for each level (check if true)
         )
 
         # use default values from pytorch-msssim (TODO: maybe change this?)
-        win = pytorch_msssim._fspecial_gauss_1d(size=11, sigma=1.5)
+        from pytorch_msssim.ssim import _fspecial_gauss_1d, gaussian_filter
+        win = _fspecial_gauss_1d(size=11, sigma=1.5)
+        channels = 3
+        input_dim = 4
+        win = win.repeat([channels] + [1] * (input_dim - 1))
         # apply gaussian filter and cast window to input's device/dtype
-        self.gaussian_filter = lambda X: pytorch_msssim.gaussian_filter(X, win.to(X.device, dtype=X.dtype))
+        self.gaussian_filter = lambda X: gaussian_filter(X, win.to(X.device, dtype=X.dtype))
 
     def forward(self, output, target):
         loss_mssim = 1 - self.MS_SSIM(output, target)
         loss_l1 = torch.abs(output - target)
         # TODO: check if it should be .mean or .sum
-        lossvalue = self.w*loss_mssim + (1-self.w)*self.gaussian_filter(loss_l1).mean()
+        # import pdb; pdb.set_trace()
+        lossvalue = self.w*loss_mssim + (1-self.w)*(self.gaussian_filter(loss_l1).mean()/self.max_val)
         return [ lossvalue ]
 
 class InferenceEval(nn.Module):
@@ -153,5 +158,5 @@ class InferenceEval(nn.Module):
     def forward(self, output, target):
         lossL1 = self.lossL1(output, target)
         lossL2 = self.lossL2(output, target)
-        msssim_val = ms_ssim(output, target, data_range=255.0, size_average=True)
+        msssim_val = pytorch_msssim.ms_ssim(output, target, data_range=255.0, size_average=True)
         return [ msssim_val, lossL1, lossL2 ]
