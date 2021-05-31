@@ -453,6 +453,8 @@ if __name__ == '__main__':
                 _pframe = output[0].data.cpu().numpy().transpose(1, 2, 0)
                 _pframe = (_pframe).clip(min=0,max=255).astype(np.uint8)
                 f_name = f_names[batch_idx]
+                if _pframe.shape[2]==1: # save a bw img
+                    _pframe = np.dstack([_pframe]*3)
                 png_data = Image.fromarray(_pframe)
                 png_data.save(f'{inference_folder}/{f_name}')
 
