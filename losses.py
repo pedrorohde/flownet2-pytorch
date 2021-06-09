@@ -107,14 +107,19 @@ class L2InterpolLoss(nn.Module):
         return [lossvalue]
 
 class MSSSIMLoss(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, channels = 1):
         super(MSSSIMLoss, self).__init__()
         self.args = args
         self.loss_labels = ['MS-SSIM']
+        self.max_val = 255.0
+        self.loss = pytorch_msssim.MS_SSIM(
+            data_range=self.max_val,
+            channel=channels,
+            size_average=True
+        )
 
     def forward(self, output, target):
-        lossvalue = (1 - pytorch_msssim.ms_ssim(output, target, data_range=255.0, size_average=True))
-        
+        lossvalue = (1 - self.loss(output, target))  
         return [ lossvalue ]
 
 class MSSSIML1Loss(nn.Module):

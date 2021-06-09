@@ -497,16 +497,19 @@ class ImagesFromFolderInterpol(data.Dataset):
 
 
 class ImagesFromFolderInterpol_lumma(data.Dataset):
-  def __init__(self, args, is_cropped=False, scanSubdir=False, annotation_file='', root = '/path/to/frames/only/folder', iext = 'png', replicates = 1):
+  def __init__(self, args, is_cropped=False, scanSubdir=False, annotation_file='', root = '/path/to/frames/only/folder', iext = 'png', augmentation = 0):
     self.args = args
     self.render_size = [-1,-1]
     self.is_cropped = is_cropped
     self.crop_size = args.crop_size
-    self.replicates = replicates
+    self.augmentation = augmentation
+    self.transforms = []
+        
     self.rgb_max = 255
     
     self.in_imgs = []
     self.ref_imgs = []
+    self.dataset_len = 0
     def parseTrainData(path):
         images = sorted( glob( join(path, '*.' + iext) ) )
         for i in range(0,len(images)-2, 2):
@@ -515,6 +518,15 @@ class ImagesFromFolderInterpol_lumma(data.Dataset):
             im2 = images[i+2]
             self.in_imgs += [ [ im1, im2 ] ]
             self.ref_imgs += [ [ ref ] ]
+            self.dataset_len += 1
+            if self.augmentation>0:
+                self.transforms.append(frame_utils.Image_transform([0,0,0]))
+                self.dataset_len += self.augmentation
+                for i in range(self.augmentation):
+                    self.in_imgs += [ [ im1, im2 ] ]
+                    self.ref_imgs += [ [ ref ] ] 
+                    
+                    self.transforms.append(frame_utils.Image_transform())
 
     if scanSubdir:
         print(f"[WARNING]: assuming that all samples have the same or higher resolution than {self.crop_size}")
@@ -565,9 +577,15 @@ class ImagesFromFolderInterpol_lumma(data.Dataset):
         cropper = StaticCenterCrop(image_size, self.render_size)
 
     in_images = list(map(cropper, in_images))
+    ref_img = cropper(ref_img)
+    if self.transforms: 
+        images = [in_images[0], ref_img, in_images[1]]
+        images_t = self.transforms[index](images)
+        in_images = [images_t[0], images_t[1]]
+        ref_img = images_t[1] 
+
     in_images = np.array(in_images).transpose(3,0,1,2)
     in_images = torch.from_numpy(in_images.astype(np.float32))
-    ref_img = cropper(ref_img)
     ref_img = (np.array(ref_img).transpose(2,0,1))#/self.rgb_max
     ref_img = torch.from_numpy(ref_img.astype(np.float32))
     def rgb2lumma(img):
@@ -582,4 +600,4 @@ class ImagesFromFolderInterpol_lumma(data.Dataset):
     return [in_images], [ref_img]
 
   def __len__(self):
-    return self.size * self.replicates
+    return self.size
