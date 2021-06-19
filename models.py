@@ -585,9 +585,9 @@ class InterpolNet(nn.Module):
         checkpoint_file = "./checkpoints/FlowNet2-S_checkpoint.pth.tar"
         checkpoint = torch.load(checkpoint_file)
         self.flownet.load_state_dict(checkpoint['state_dict'])
-        self.flownet.training = False
+        self.flownet.training = True
         for param in self.flownet.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
 
         if args.fp16:
             self.resample1 = nn.Sequential(
@@ -738,12 +738,12 @@ class InterpolNet_lumma(nn.Module):
         # self.flownet = FlowNet2(args)
         # checkpoint_file = "./checkpoints/FlowNet2_checkpoint.pth.tar"
         self.flownet = FlowNet2S(args)
-        checkpoint_file = "./checkpoints/FlowNet2-S_checkpoint.pth.tar"
-        checkpoint = torch.load(checkpoint_file)
-        self.flownet.load_state_dict(checkpoint['state_dict'])
-        self.flownet.training = False
+        # checkpoint_file = "./checkpoints/FlowNet2-S_checkpoint.pth.tar"
+        # checkpoint = torch.load(checkpoint_file)
+        # self.flownet.load_state_dict(checkpoint['state_dict'])
+        self.flownet.training = True
         for param in self.flownet.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
 
         if args.fp16:
             self.resample1 = nn.Sequential(
@@ -791,7 +791,7 @@ class InterpolNet_lumma(nn.Module):
 
     def forward(self, inputs):
         # Same as fnet2 input
-        self.flownet.training = False
+        # self.flownet.training = False
 
         flow = self.flownet(inputs)
 

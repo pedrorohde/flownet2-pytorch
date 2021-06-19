@@ -487,6 +487,8 @@ if __name__ == '__main__':
             stats = inference(args=args, epoch=epoch - 1, data_loader=inference_loader, model=model_and_loss, offset=offset)
             offset += 1
 
+        print("val")
+        # import pdb; pdb.set_trace()
         if not args.skip_validation and ((epoch - 1) % args.validation_frequency) == 0:
             validation_loss, iterations = train(args=args, epoch=epoch - 1, start_iteration=global_iteration, data_loader=validation_loader, model=model_and_loss, optimizer=optimizer, is_validate=True, offset=offset, unified_logger=unified_logger, last_val_idx=validation_iteration)
             validation_iteration += iterations
