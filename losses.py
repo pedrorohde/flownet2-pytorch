@@ -107,33 +107,39 @@ class L2InterpolLoss(nn.Module):
         return [lossvalue]
 
 class MSSSIMLoss(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, channels = 1):
         super(MSSSIMLoss, self).__init__()
         self.args = args
         self.loss_labels = ['MS-SSIM']
+        self.max_val = 255.0
+        self.loss = pytorch_msssim.MS_SSIM(
+            data_range=self.max_val,
+            channel=channels,
+            size_average=True
+        )
 
     def forward(self, output, target):
-        lossvalue = (1 - pytorch_msssim.ms_ssim(output, target, data_range=255.0, size_average=True))
-        
+        lossvalue = (1 - self.loss(output, target))  
         return [ lossvalue ]
 
 class MSSSIML1Loss(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, channels = 1):
         super(MSSSIML1Loss, self).__init__()
         self.args = args
         self.w = 0.84 # empirically set (see paper) 
         self.loss_labels = ['MS-SSIM_L1']
         self.max_val = 255.0
+        self.channels = channels
         self.MS_SSIM = pytorch_msssim.MS_SSIM(
             data_range=self.max_val,
             size_average=True,
+            channel=channels,
             weights=[1.]*5 # no different weights for each level (check if true)
         )
 
         # use default values from pytorch-msssim (TODO: maybe change this?)
         from pytorch_msssim.ssim import _fspecial_gauss_1d, gaussian_filter
         win = _fspecial_gauss_1d(size=11, sigma=1.5)
-        channels = 3
         input_dim = 4
         win = win.repeat([channels] + [1] * (input_dim - 1))
         # apply gaussian filter and cast window to input's device/dtype
