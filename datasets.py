@@ -581,7 +581,7 @@ class ImagesFromFolderInterpol_lumma(data.Dataset):
     if self.transforms: 
         images = [in_images[0], ref_img, in_images[1]]
         images_t = self.transforms[index](images)
-        in_images = [images_t[0], images_t[1]]
+        in_images = [images_t[0], images_t[2]]
         ref_img = images_t[1] 
 
     in_images = np.array(in_images).transpose(3,0,1,2)
