@@ -157,12 +157,13 @@ class InferenceEval(nn.Module):
     def __init__(self, args):
         super(InferenceEval, self).__init__()
         self.args = args
-        self.loss_labels = ['MS-SSIM', 'L1', 'L2']
+        self.loss_labels = ['SSIM', 'MS-SSIM', 'L1', 'L2']
         self.lossL1 = L1()
         self.lossL2 = L2()
 
     def forward(self, output, target):
+        ssim_val = pytorch_msssim.ssim(output, target, data_range=255.0, size_average=True)
+        msssim_val = pytorch_msssim.ms_ssim(output, target, data_range=255.0, size_average=True)
         lossL1 = self.lossL1(output, target)
         lossL2 = self.lossL2(output, target)
-        msssim_val = pytorch_msssim.ms_ssim(output, target, data_range=255.0, size_average=True)
-        return [ msssim_val, lossL1, lossL2 ]
+        return [ ssim_val, msssim_val, lossL1, lossL2 ]
